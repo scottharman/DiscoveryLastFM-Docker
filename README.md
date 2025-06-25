@@ -26,6 +26,7 @@ docker-compose up -d
 
 ### Option 2: Docker Run
 
+#### With Lidarr (Recommended)
 ```bash
 docker run -d \
   --name discoverylastfm \
@@ -34,6 +35,20 @@ docker run -d \
   -e MUSIC_SERVICE=lidarr \
   -e LIDARR_API_KEY=your_lidarr_key \
   -e LIDARR_ENDPOINT=http://your-lidarr:8686 \
+  -v discoverylastfm_config:/app/config \
+  -v discoverylastfm_logs:/app/logs \
+  mrrobotogit/discoverylastfm:latest
+```
+
+#### With Headphones
+```bash
+docker run -d \
+  --name discoverylastfm \
+  -e LASTFM_USERNAME=your_username \
+  -e LASTFM_API_KEY=your_api_key \
+  -e MUSIC_SERVICE=headphones \
+  -e HP_API_KEY=your_headphones_key \
+  -e HP_ENDPOINT=http://your-headphones:8181 \
   -v discoverylastfm_config:/app/config \
   -v discoverylastfm_logs:/app/logs \
   mrrobotogit/discoverylastfm:latest
