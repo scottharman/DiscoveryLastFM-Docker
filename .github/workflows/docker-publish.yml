@@ -354,11 +354,7 @@ jobs:
             echo "No documentation changes to commit"
           else
             git add README.md
-            git commit -m "docs: update Docker image version to ${{ needs.prepare.outputs.version }} 🤖
-
-Generated with Claude Code
-            
-Co-Authored-By: Claude <noreply@anthropic.com>"
+            git commit -m "docs: update Docker image version to ${{ needs.prepare.outputs.version }} 🤖 Generated with GitHub Actions Co-Authored-By: MrRobotoGit <mrrobotogit@github.com>"
             git push
           fi
 
