@@ -184,42 +184,47 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
+      - name: Clone DiscoveryLastFM source
+        run: |
+          # Clone the main DiscoveryLastFM repository
+          git clone https://github.com/MrRobotoGit/DiscoveryLastFM.git ../DiscoveryLastFM
+          
+          # Verify source files exist
+          if [ -f "../DiscoveryLastFM/DiscoveryLastFM.py" ]; then
+            echo "✅ DiscoveryLastFM.py found"
+          else
+            echo "❌ DiscoveryLastFM.py not found"
+            exit 1
+          fi
+          
+          if [ -d "../DiscoveryLastFM/services" ]; then
+            echo "✅ services directory found"
+          else
+            echo "❌ services directory not found"
+            exit 1
+          fi
+          
+          if [ -d "../DiscoveryLastFM/utils" ]; then
+            echo "✅ utils directory found"
+          else
+            echo "❌ utils directory not found"
+            exit 1
+          fi
+      
       - name: Prepare build context
         run: |
-          # Create build context with source files
-          mkdir -p build-context
-          
-          # Copy DiscoveryLastFM source files
-          if [ -d "../DiscoveryLastFM" ]; then
-            echo "Copying source files from ../DiscoveryLastFM"
-            cp -r ../DiscoveryLastFM/DiscoveryLastFM.py build-context/
-            
-            if [ -d "../DiscoveryLastFM/services" ]; then
-              cp -r ../DiscoveryLastFM/services build-context/
-            else
-              echo "Services directory not found, creating empty one"
-              mkdir -p build-context/services
-              echo "# Placeholder services module" > build-context/services/__init__.py
-            fi
-            
-            if [ -d "../DiscoveryLastFM/utils" ]; then
-              cp -r ../DiscoveryLastFM/utils build-context/
-            else
-              echo "Utils directory not found, creating empty one"
-              mkdir -p build-context/utils
-              echo "# Placeholder utils module" > build-context/utils/__init__.py
-            fi
-          else
-            echo "DiscoveryLastFM source directory not found, using placeholders"
-            echo "# Placeholder DiscoveryLastFM.py for Docker build" > build-context/DiscoveryLastFM.py
-            mkdir -p build-context/{services,utils}
-            echo "# Placeholder" > build-context/services/__init__.py
-            echo "# Placeholder" > build-context/utils/__init__.py
-          fi
+          # Copy source files to current directory for Docker build
+          cp ../DiscoveryLastFM/DiscoveryLastFM.py ./
+          cp -r ../DiscoveryLastFM/services ./
+          cp -r ../DiscoveryLastFM/utils ./
           
           # List what we're building with
           echo "Build context contents:"
-          find build-context -type f | head -20
+          ls -la
+          echo "Services contents:"
+          ls -la services/
+          echo "Utils contents:"  
+          ls -la utils/
       
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
