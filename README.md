@@ -375,7 +375,7 @@ docker cp discoverylastfm:/tmp/backup.tar.gz ./backup-$(date +%Y%m%d).tar.gz
 | Tag | Description | Architecture |
 |-----|-------------|--------------|
 | `latest` | Latest stable release | `amd64`, `arm64` |
-| `v2.1.0` | Specific version | `amd64`, `arm64` |
+| `v2.1.0` | Current stable version | `amd64`, `arm64` |
 | `main` | Development branch | `amd64`, `arm64` |
 | `security-*` | Security updates | `amd64`, `arm64` |
 
