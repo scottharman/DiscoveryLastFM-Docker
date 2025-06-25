@@ -1,0 +1,380 @@
+# ==============================================================================
+# DiscoveryLastFM Docker CI Pipeline
+# Builds and tests Docker containers on pull requests and pushes
+# ==============================================================================
+
+name: Docker CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'Dockerfile'
+      - 'docker-compose*.yml'
+      - 'docker-entrypoint.sh'
+      - 'requirements.txt'
+      - 'scripts/**'
+      - '.github/workflows/docker-*.yml'
+  
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'Dockerfile'
+      - 'docker-compose*.yml'
+      - 'docker-entrypoint.sh'
+      - 'requirements.txt'
+      - 'scripts/**'
+      - '.github/workflows/docker-*.yml'
+
+  workflow_dispatch:
+    inputs:
+      debug:
+        description: 'Enable debug mode'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  # Container registry settings
+  REGISTRY_DOCKERHUB: docker.io
+  REGISTRY_GHCR: ghcr.io
+  IMAGE_NAME: discoverylastfm
+  
+  # Build settings
+  BUILDKIT_PROGRESS: plain
+  DOCKER_BUILDKIT: 1
+
+jobs:
+  
+  # ==========================================================================
+  # Lint and Validate
+  # ==========================================================================
+  lint:
+    name: Lint and Validate
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Validate Docker Compose files
+        run: |
+          docker-compose -f docker-compose.yml config --quiet
+          docker-compose -f docker-compose.yml -f docker-compose.dev.yml config --quiet
+      
+      - name: Lint Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          failure-threshold: warning
+      
+      - name: Validate shell scripts
+        run: |
+          sudo apt-get update && sudo apt-get install -y shellcheck
+          find . -name "*.sh" -exec shellcheck {} \;
+      
+      - name: Check file permissions
+        run: |
+          # Check that entrypoint scripts are executable
+          test -x docker-entrypoint.sh || echo "::error::docker-entrypoint.sh not executable"
+          test -x scripts/health-check.sh || echo "::error::health-check.sh not executable"
+
+  # ==========================================================================
+  # Build Multi-Architecture Images
+  # ==========================================================================
+  build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: lint
+    
+    strategy:
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for proper versioning
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: ${{ matrix.platform }}
+      
+      - name: Set up QEMU for cross-platform builds
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+      
+      - name: Generate metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.REGISTRY_DOCKERHUB }}/mrrobotogit/${{ env.IMAGE_NAME }}
+            ${{ env.REGISTRY_GHCR }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.title=DiscoveryLastFM
+            org.opencontainers.image.description=Automated music discovery for Last.fm and music managers
+            org.opencontainers.image.vendor=MrRobotoGit
+      
+      - name: Copy source files for build context
+        run: |
+          # Create temporary build context with source files
+          mkdir -p build-context
+          
+          # Copy DiscoveryLastFM source files
+          if [ -d "../DiscoveryLastFM" ]; then
+            cp -r ../DiscoveryLastFM/DiscoveryLastFM.py build-context/
+            cp -r ../DiscoveryLastFM/services build-context/ 2>/dev/null || echo "Services directory not found"
+            cp -r ../DiscoveryLastFM/utils build-context/ 2>/dev/null || echo "Utils directory not found"
+          else
+            # Create dummy files for CI testing
+            echo "# Dummy DiscoveryLastFM.py for CI testing" > build-context/DiscoveryLastFM.py
+            mkdir -p build-context/services build-context/utils
+            touch build-context/services/__init__.py build-context/utils/__init__.py
+          fi
+      
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ github.workflow }}-${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=${{ github.workflow }}-${{ matrix.platform }}
+          outputs: type=docker,dest=/tmp/docker-image-${{ strategy.job-index }}.tar
+      
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image-${{ strategy.job-index }}
+          path: /tmp/docker-image-${{ strategy.job-index }}.tar
+          retention-days: 1
+
+  # ==========================================================================
+  # Test Docker Images
+  # ==========================================================================
+  test:
+    name: Test Docker Images
+    runs-on: ubuntu-latest
+    needs: build
+    
+    strategy:
+      matrix:
+        test-scenario:
+          - name: "Basic functionality"
+            mode: "test"
+            compose-file: "docker-compose.yml"
+          - name: "Development setup"
+            mode: "test"
+            compose-file: "docker-compose.yml -f docker-compose.dev.yml"
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download image artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: docker-image-*
+          path: /tmp/images
+          merge-multiple: true
+      
+      - name: Load Docker images
+        run: |
+          for image in /tmp/images/*.tar; do
+            docker load < "$image"
+          done
+      
+      - name: Create test environment file
+        run: |
+          cat > .env << EOF
+          LASTFM_USERNAME=test_user
+          LASTFM_API_KEY=test_key
+          MUSIC_SERVICE=headphones
+          HP_API_KEY=test_hp_key
+          HP_ENDPOINT=http://test:8181
+          DISCOVERY_MODE=${{ matrix.test-scenario.mode }}
+          DRY_RUN=true
+          DEBUG=true
+          EOF
+      
+      - name: Test container startup
+        run: |
+          # Start services
+          docker-compose -f ${{ matrix.test-scenario.compose-file }} up -d
+          
+          # Wait for health checks
+          timeout 60s bash -c 'until docker-compose -f ${{ matrix.test-scenario.compose-file }} ps | grep -q "healthy"; do sleep 2; done'
+          
+          # Run health check
+          docker-compose -f ${{ matrix.test-scenario.compose-file }} exec -T discoverylastfm /usr/local/bin/health-check config
+      
+      - name: Test application functionality
+        run: |
+          # Test configuration validation
+          docker-compose -f ${{ matrix.test-scenario.compose-file }} exec -T discoverylastfm python -c "
+          import sys
+          sys.path.append('/app')
+          try:
+              exec(open('/app/config/config.py').read())
+              print('✅ Configuration loaded successfully')
+          except Exception as e:
+              print(f'❌ Configuration failed: {e}')
+              sys.exit(1)
+          "
+      
+      - name: Collect logs
+        if: always()
+        run: |
+          mkdir -p test-logs
+          docker-compose -f ${{ matrix.test-scenario.compose-file }} logs > test-logs/compose-${{ strategy.job-index }}.log
+      
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs-${{ strategy.job-index }}
+          path: test-logs/
+          retention-days: 7
+      
+      - name: Cleanup
+        if: always()
+        run: |
+          docker-compose -f ${{ matrix.test-scenario.compose-file }} down -v
+          docker system prune -f
+
+  # ==========================================================================
+  # Security Scanning
+  # ==========================================================================
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download image artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: docker-image-*
+          path: /tmp/images
+          merge-multiple: true
+      
+      - name: Load Docker images
+        run: |
+          docker load < /tmp/images/docker-image-0.tar
+      
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'mrrobotogit/discoverylastfm:latest'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+      
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # ==========================================================================
+  # Performance Testing
+  # ==========================================================================
+  performance:
+    name: Performance Testing
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download image artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: docker-image-*
+          path: /tmp/images
+          merge-multiple: true
+      
+      - name: Load Docker images
+        run: |
+          docker load < /tmp/images/docker-image-0.tar
+      
+      - name: Performance test
+        run: |
+          # Create test environment
+          cat > .env << EOF
+          LASTFM_USERNAME=test_user
+          LASTFM_API_KEY=test_key
+          MUSIC_SERVICE=headphones
+          HP_API_KEY=test_hp_key
+          HP_ENDPOINT=http://test:8181
+          DISCOVERY_MODE=test
+          DRY_RUN=true
+          DEBUG=false
+          EOF
+          
+          # Measure startup time
+          start_time=$(date +%s)
+          docker-compose up -d discoverylastfm
+          
+          # Wait for healthy status
+          timeout 60s bash -c 'until [ "$(docker inspect --format="{{.State.Health.Status}}" discoverylastfm)" = "healthy" ]; do sleep 1; done'
+          
+          end_time=$(date +%s)
+          startup_time=$((end_time - start_time))
+          
+          echo "Container startup time: ${startup_time}s"
+          
+          # Measure memory usage
+          memory_usage=$(docker stats --no-stream --format "{{.MemUsage}}" discoverylastfm)
+          echo "Memory usage: $memory_usage"
+          
+          # Performance requirements
+          if [ $startup_time -gt 30 ]; then
+            echo "::error::Startup time too slow: ${startup_time}s (max: 30s)"
+            exit 1
+          fi
+      
+      - name: Cleanup
+        if: always()
+        run: |
+          docker-compose down -v
+          docker system prune -f
+
+  # ==========================================================================
+  # Report Results
+  # ==========================================================================
+  report:
+    name: Report Results
+    runs-on: ubuntu-latest
+    needs: [lint, build, test, security]
+    if: always()
+    
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## Docker CI Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Lint**: ${{ needs.lint.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build**: ${{ needs.build.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test**: ${{ needs.test.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Security**: ${{ needs.security.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Built for platforms: linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY

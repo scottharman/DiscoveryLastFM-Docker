@@ -1,0 +1,128 @@
+# ==============================================================================
+# DiscoveryLastFM Development Docker Compose Override
+# Use with: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  
+  # Development overrides for main application
+  discoverylastfm:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime  # Use runtime stage for faster builds
+    
+    # Development environment
+    environment:
+      - DISCOVERY_MODE=test        # Test mode for development
+      - DEBUG=true                 # Enable debug logging
+      - DRY_RUN=true              # Safe testing mode
+      - PYTHONUNBUFFERED=1        # Real-time log output
+    
+    # Development volumes - mount source code
+    volumes:
+      - discoverylastfm_config:/app/config
+      - discoverylastfm_logs:/app/logs
+      - discoverylastfm_cache:/app/cache
+      
+      # Mount source code for live development
+      - ../DiscoveryLastFM/DiscoveryLastFM.py:/app/DiscoveryLastFM.py:ro
+      - ../DiscoveryLastFM/services:/app/services:ro
+      - ../DiscoveryLastFM/utils:/app/utils:ro
+      
+      # Mount development config
+      - ./config/dev.config.py:/app/config/config.py:ro
+    
+    # Override command for interactive development
+    command: ["python", "/app/DiscoveryLastFM.py"]
+    
+    # Remove dependencies for faster startup
+    depends_on: []
+    
+    # Add development ports
+    ports:
+      - "8080:8080"   # Metrics/debug port
+    
+    # Development resource limits (more permissive)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+
+  # Development Lidarr with exposed ports
+  lidarr:
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Rome
+    
+    # Development volumes
+    volumes:
+      - lidarr_config:/config
+      - ./dev-data/music:/music         # Development music folder
+      - ./dev-data/downloads:/downloads # Development downloads
+    
+    # Always expose ports in development
+    ports:
+      - "8686:8686"
+
+  # Development Redis with exposed ports
+  redis:
+    ports:
+      - "6379:6379"
+    
+    # Development command (less restrictive)
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+
+  # Add development database for testing
+  postgres:
+    image: postgres:15-alpine
+    container_name: discoverylastfm-dev-db
+    environment:
+      - POSTGRES_DB=discoverylastfm_dev
+      - POSTGRES_USER=dev
+      - POSTGRES_PASSWORD=dev123
+    
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    
+    ports:
+      - "5432:5432"
+    
+    networks:
+      - discoverylastfm
+    
+    labels:
+      - "com.discoverylastfm.service=dev-database"
+
+  # Development log viewer
+  logs:
+    image: amir20/dozzle:latest
+    container_name: discoverylastfm-logs
+    
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    
+    ports:
+      - "8081:8080"
+    
+    networks:
+      - discoverylastfm
+    
+    environment:
+      - DOZZLE_LEVEL=debug
+      - DOZZLE_FILTER="name=discoverylastfm*"
+    
+    labels:
+      - "com.discoverylastfm.service=dev-logs"
+
+# Additional volumes for development
+volumes:
+  postgres_dev_data:
+    driver: local

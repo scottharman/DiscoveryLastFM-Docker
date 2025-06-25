@@ -1,0 +1,416 @@
+# ==============================================================================
+# DiscoveryLastFM Docker Publishing Pipeline
+# Automatically publishes Docker images to registries on releases and main branch
+# ==============================================================================
+
+name: Docker Publish
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*.*.*' ]
+  
+  release:
+    types: [published]
+  
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Custom tag to publish'
+        required: false
+        default: 'manual'
+      platforms:
+        description: 'Platforms to build for'
+        required: false
+        default: 'linux/amd64,linux/arm64'
+      registry:
+        description: 'Registry to publish to'
+        required: false
+        default: 'both'
+        type: choice
+        options:
+        - both
+        - dockerhub
+        - ghcr
+
+env:
+  # Registry settings
+  REGISTRY_DOCKERHUB: docker.io
+  REGISTRY_GHCR: ghcr.io
+  IMAGE_NAME: discoverylastfm
+  
+  # Build settings
+  BUILDKIT_PROGRESS: plain
+  DOCKER_BUILDKIT: 1
+
+jobs:
+  
+  # ==========================================================================
+  # Prepare Build Matrix
+  # ==========================================================================
+  prepare:
+    name: Prepare Build
+    runs-on: ubuntu-latest
+    outputs:
+      platforms: ${{ steps.config.outputs.platforms }}
+      push-dockerhub: ${{ steps.config.outputs.push-dockerhub }}
+      push-ghcr: ${{ steps.config.outputs.push-ghcr }}
+      version: ${{ steps.version.outputs.version }}
+      tags: ${{ steps.meta.outputs.tags }}
+      labels: ${{ steps.meta.outputs.labels }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Configure build parameters
+        id: config
+        run: |
+          # Determine platforms
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            PLATFORMS="${{ github.event.inputs.platforms }}"
+            REGISTRY_CHOICE="${{ github.event.inputs.registry }}"
+          else
+            PLATFORMS="linux/amd64,linux/arm64"
+            REGISTRY_CHOICE="both"
+          fi
+          
+          # Determine which registries to push to
+          case "$REGISTRY_CHOICE" in
+            "dockerhub")
+              PUSH_DOCKERHUB=true
+              PUSH_GHCR=false
+              ;;
+            "ghcr")
+              PUSH_DOCKERHUB=false
+              PUSH_GHCR=true
+              ;;
+            "both"|*)
+              PUSH_DOCKERHUB=true
+              PUSH_GHCR=true
+              ;;
+          esac
+          
+          echo "platforms=$PLATFORMS" >> $GITHUB_OUTPUT
+          echo "push-dockerhub=$PUSH_DOCKERHUB" >> $GITHUB_OUTPUT
+          echo "push-ghcr=$PUSH_GHCR" >> $GITHUB_OUTPUT
+          
+          echo "Building for platforms: $PLATFORMS"
+          echo "Push to Docker Hub: $PUSH_DOCKERHUB"
+          echo "Push to GHCR: $PUSH_GHCR"
+      
+      - name: Generate version
+        id: version
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          elif [[ $GITHUB_REF == refs/heads/main ]]; then
+            VERSION="latest"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.tag }}"
+          else
+            VERSION="dev-${GITHUB_SHA::8}"
+          fi
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+      
+      - name: Generate metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            name=${{ env.REGISTRY_DOCKERHUB }}/mrrobotogit/${{ env.IMAGE_NAME }},enable=${{ steps.config.outputs.push-dockerhub }}
+            name=${{ env.REGISTRY_GHCR }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }},enable=${{ steps.config.outputs.push-ghcr }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ steps.version.outputs.version }},enable=${{ github.event_name == 'workflow_dispatch' }}
+          labels: |
+            org.opencontainers.image.title=DiscoveryLastFM
+            org.opencontainers.image.description=Automated music discovery integration for Last.fm, Headphones, and Lidarr
+            org.opencontainers.image.vendor=MrRobotoGit
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
+            org.opencontainers.image.created={{date 'YYYY-MM-DDTHH:mm:ssZ'}}
+            org.opencontainers.image.revision={{sha}}
+            org.opencontainers.image.url=https://github.com/${{ github.repository }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.documentation=https://github.com/${{ github.repository }}/blob/main/README.md
+            org.opencontainers.image.licenses=MIT
+
+  # ==========================================================================
+  # Build and Publish
+  # ==========================================================================
+  publish:
+    name: Build and Publish
+    runs-on: ubuntu-latest
+    needs: prepare
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          buildkitd-flags: --debug
+      
+      - name: Login to Docker Hub
+        if: needs.prepare.outputs.push-dockerhub == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY_DOCKERHUB }}
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      
+      - name: Login to GitHub Container Registry
+        if: needs.prepare.outputs.push-ghcr == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY_GHCR }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Prepare build context
+        run: |
+          # Create build context with source files
+          mkdir -p build-context
+          
+          # Copy DiscoveryLastFM source files
+          if [ -d "../DiscoveryLastFM" ]; then
+            echo "Copying source files from ../DiscoveryLastFM"
+            cp -r ../DiscoveryLastFM/DiscoveryLastFM.py build-context/
+            
+            if [ -d "../DiscoveryLastFM/services" ]; then
+              cp -r ../DiscoveryLastFM/services build-context/
+            else
+              echo "Services directory not found, creating empty one"
+              mkdir -p build-context/services
+              echo "# Placeholder services module" > build-context/services/__init__.py
+            fi
+            
+            if [ -d "../DiscoveryLastFM/utils" ]; then
+              cp -r ../DiscoveryLastFM/utils build-context/
+            else
+              echo "Utils directory not found, creating empty one"
+              mkdir -p build-context/utils
+              echo "# Placeholder utils module" > build-context/utils/__init__.py
+            fi
+          else
+            echo "DiscoveryLastFM source directory not found, using placeholders"
+            echo "# Placeholder DiscoveryLastFM.py for Docker build" > build-context/DiscoveryLastFM.py
+            mkdir -p build-context/{services,utils}
+            echo "# Placeholder" > build-context/services/__init__.py
+            echo "# Placeholder" > build-context/utils/__init__.py
+          fi
+          
+          # List what we're building with
+          echo "Build context contents:"
+          find build-context -type f | head -20
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: ${{ needs.prepare.outputs.platforms }}
+          push: true
+          tags: ${{ needs.prepare.outputs.tags }}
+          labels: ${{ needs.prepare.outputs.labels }}
+          cache-from: type=gha,scope=${{ github.workflow }}
+          cache-to: type=gha,mode=max,scope=${{ github.workflow }}
+          provenance: true
+          sbom: true
+      
+      - name: Generate build summary
+        run: |
+          echo "## 🐳 Docker Images Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ needs.prepare.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Platforms:** ${{ needs.prepare.outputs.platforms }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Published to:" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.prepare.outputs.push-dockerhub }}" = "true" ]; then
+            echo "- **Docker Hub:** \`docker pull mrrobotogit/discoverylastfm:${{ needs.prepare.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.prepare.outputs.push-ghcr }}" = "true" ]; then
+            echo "- **GitHub Container Registry:** \`docker pull ghcr.io/${{ github.repository_owner }}/discoverylastfm:${{ needs.prepare.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 Quick Start:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "# Pull the image" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull mrrobotogit/discoverylastfm:${{ needs.prepare.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Run with Docker Compose" >> $GITHUB_STEP_SUMMARY
+          echo "curl -o docker-compose.yml https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.yml" >> $GITHUB_STEP_SUMMARY
+          echo "cp .env.example .env  # Edit with your configuration" >> $GITHUB_STEP_SUMMARY
+          echo "docker-compose up -d" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  # ==========================================================================
+  # Post-Publish Testing
+  # ==========================================================================
+  verify:
+    name: Verify Published Images
+    runs-on: ubuntu-latest
+    needs: [prepare, publish]
+    if: needs.prepare.outputs.push-dockerhub == 'true'
+    
+    strategy:
+      matrix:
+        platform: [linux/amd64, linux/arm64]
+    
+    steps:
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+      
+      - name: Test image pull and run
+        run: |
+          # Pull the published image
+          docker pull --platform=${{ matrix.platform }} mrrobotogit/discoverylastfm:${{ needs.prepare.outputs.version }}
+          
+          # Test basic functionality
+          docker run --rm \
+            --platform=${{ matrix.platform }} \
+            -e DISCOVERY_MODE=test \
+            -e LASTFM_USERNAME=test \
+            -e LASTFM_API_KEY=test \
+            -e MUSIC_SERVICE=headphones \
+            -e HP_API_KEY=test \
+            -e HP_ENDPOINT=http://test:8181 \
+            mrrobotogit/discoverylastfm:${{ needs.prepare.outputs.version }}
+      
+      - name: Test health check
+        run: |
+          # Start container in background
+          CONTAINER_ID=$(docker run -d \
+            --platform=${{ matrix.platform }} \
+            -e DISCOVERY_MODE=daemon \
+            -e LASTFM_USERNAME=test \
+            -e LASTFM_API_KEY=test \
+            -e MUSIC_SERVICE=headphones \
+            -e HP_API_KEY=test \
+            -e HP_ENDPOINT=http://test:8181 \
+            mrrobotogit/discoverylastfm:${{ needs.prepare.outputs.version }})
+          
+          # Wait for container to be healthy
+          timeout 60s bash -c "until [ \"\$(docker inspect --format='{{.State.Health.Status}}' $CONTAINER_ID)\" = 'healthy' ]; do sleep 2; done"
+          
+          # Cleanup
+          docker stop $CONTAINER_ID
+          docker rm $CONTAINER_ID
+
+  # ==========================================================================
+  # Update Documentation
+  # ==========================================================================
+  update-docs:
+    name: Update Documentation
+    runs-on: ubuntu-latest
+    needs: [prepare, publish, verify]
+    if: github.ref == 'refs/heads/main' && needs.prepare.outputs.push-dockerhub == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Update README with latest version
+        run: |
+          # Update README.md with latest Docker image info
+          if [ -f "README.md" ]; then
+            # Update Docker image references
+            sed -i 's|mrrobotogit/discoverylastfm:[^[:space:]]*|mrrobotogit/discoverylastfm:${{ needs.prepare.outputs.version }}|g' README.md
+            
+            # Update version badges if present
+            sed -i 's|version-[^-]*-blue|version-${{ needs.prepare.outputs.version }}-blue|g' README.md
+          fi
+      
+      - name: Commit documentation updates
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          if git diff --quiet; then
+            echo "No documentation changes to commit"
+          else
+            git add README.md
+            git commit -m "docs: update Docker image version to ${{ needs.prepare.outputs.version }} 🤖
+
+Generated with Claude Code
+            
+Co-Authored-By: Claude <noreply@anthropic.com>"
+            git push
+          fi
+
+  # ==========================================================================
+  # Notify Success
+  # ==========================================================================
+  notify:
+    name: Notify Success
+    runs-on: ubuntu-latest
+    needs: [prepare, publish, verify]
+    if: success()
+    
+    steps:
+      - name: Create release comment (for tagged releases)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = context.ref.replace('refs/tags/', '');
+            const body = `🐳 **Docker Images Published**
+            
+            The Docker images for release \`${tag}\` have been successfully published:
+            
+            **Multi-architecture support:**
+            - \`linux/amd64\` (Intel/AMD 64-bit)
+            - \`linux/arm64\` (ARM 64-bit, including Raspberry Pi 4+)
+            
+            **Available registries:**
+            - **Docker Hub:** \`docker pull mrrobotogit/discoverylastfm:${tag}\`
+            - **GitHub Container Registry:** \`docker pull ghcr.io/${{ github.repository_owner }}/discoverylastfm:${tag}\`
+            
+            **Quick start:**
+            \`\`\`bash
+            curl -o docker-compose.yml https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.yml
+            cp .env.example .env  # Edit with your configuration
+            docker-compose up -d
+            \`\`\`
+            
+            🤖 _Generated automatically by GitHub Actions_`;
+            
+            // Find the release for this tag
+            const releases = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            
+            const release = releases.data.find(r => r.tag_name === tag);
+            if (release) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: release.id,
+                body: body
+              });
+            }

@@ -1,0 +1,219 @@
+# ==============================================================================
+# DiscoveryLastFM Docker Build Exclusions
+# Optimize build context by excluding unnecessary files
+# ==============================================================================
+
+# =============================================================================
+# Version Control
+# =============================================================================
+.git/
+.gitignore
+.gitattributes
+.github/
+
+# =============================================================================
+# Documentation
+# =============================================================================
+*.md
+README*
+CHANGELOG*
+LICENSE*
+docs/
+examples/
+
+# =============================================================================
+# Development Files
+# =============================================================================
+.vscode/
+.idea/
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.pytest_cache/
+.coverage
+.tox/
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# =============================================================================
+# Docker Files (exclude from build context)
+# =============================================================================
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+.env*
+
+# =============================================================================
+# Build Artifacts
+# =============================================================================
+build/
+dist/
+*.egg-info/
+.eggs/
+build-context/
+
+# =============================================================================
+# Logs and Temporary Files
+# =============================================================================
+*.log
+logs/
+tmp/
+temp/
+.tmp/
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# =============================================================================
+# Configuration Files (sensitive)
+# =============================================================================
+config.py
+*.key
+*.pem
+*.crt
+secrets/
+.secrets/
+
+# =============================================================================
+# Cache Files
+# =============================================================================
+*.cache
+lastfm_similar_cache.json
+.cache/
+cache/
+
+# =============================================================================
+# Backup Files
+# =============================================================================
+*.bak
+*.backup
+backup/
+backups/
+*.tar.gz
+*.zip
+
+# =============================================================================
+# OS Generated Files
+# =============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# =============================================================================
+# Editor Files
+# =============================================================================
+*.sublime-project
+*.sublime-workspace
+.vscode/
+*.code-workspace
+
+# =============================================================================
+# Scripts (will be copied separately if needed)
+# =============================================================================
+scripts/setup-*.sh
+scripts/build-*.sh
+scripts/deploy-*.sh
+
+# =============================================================================
+# Test Files
+# =============================================================================
+test/
+tests/
+*_test.py
+test_*.py
+pytest.ini
+tox.ini
+
+# =============================================================================
+# Node.js (if any)
+# =============================================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# =============================================================================
+# Python Virtual Environments
+# =============================================================================
+pyvenv.cfg
+pip-selfcheck.json
+
+# =============================================================================
+# IDE and Editor Configs
+# =============================================================================
+.editorconfig
+.flake8
+.pylintrc
+pyproject.toml
+setup.cfg
+
+# =============================================================================
+# CI/CD Files
+# =============================================================================
+.travis.yml
+.circleci/
+.github/
+Jenkinsfile
+azure-pipelines.yml
+
+# =============================================================================
+# Security Scan Results
+# =============================================================================
+trivy-results.*
+security-report.*
+vulnerability-scan.*
+
+# =============================================================================
+# Docker Development Files
+# =============================================================================
+docker-compose.override.yml
+docker-compose.dev.yml
+.compose-command
+
+# =============================================================================
+# Local Development Data
+# =============================================================================
+dev-data/
+local-data/
+*.local
+
+# =============================================================================
+# Include Exceptions (force include important files)
+# =============================================================================
+# Use ! prefix to force include files that might be excluded by patterns above
+
+# Include required Python files
+!requirements.txt
+!config/docker.config.example.py
+
+# Include essential Docker files needed for build
+!docker-entrypoint.sh
+!scripts/health-check.sh
+
+# Include source code that should be in the container
+!DiscoveryLastFM.py
+!services/
+!utils/
+
+# Include build context if it exists
+!build-context/
