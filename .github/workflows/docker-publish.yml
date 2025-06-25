@@ -184,47 +184,63 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Clone DiscoveryLastFM source
+      - name: Download DiscoveryLastFM source
         run: |
-          # Clone the main DiscoveryLastFM repository
-          git clone https://github.com/MrRobotoGit/DiscoveryLastFM.git ../DiscoveryLastFM
-          
-          # Verify source files exist
-          if [ -f "../DiscoveryLastFM/DiscoveryLastFM.py" ]; then
-            echo "✅ DiscoveryLastFM.py found"
+          # Determine version to download
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+            echo "Building for tag: $VERSION"
+            # Try to download specific version, fallback to main if not found
+            if curl -sf "https://api.github.com/repos/MrRobotoGit/DiscoveryLastFM/releases/tags/$VERSION" > /dev/null; then
+              DOWNLOAD_REF="tags/$VERSION"
+              echo "Found release $VERSION, using release source"
+            else
+              DOWNLOAD_REF="heads/main"
+              echo "Release $VERSION not found, using main branch source"
+            fi
           else
-            echo "❌ DiscoveryLastFM.py not found"
+            DOWNLOAD_REF="heads/main"
+            echo "Building from main branch source"
+          fi
+          
+          # Download source files from GitHub
+          echo "Downloading from: https://api.github.com/repos/MrRobotoGit/DiscoveryLastFM/zipball/$DOWNLOAD_REF"
+          curl -L "https://api.github.com/repos/MrRobotoGit/DiscoveryLastFM/zipball/$DOWNLOAD_REF" -o source.zip
+          
+          # Extract source files
+          unzip -q source.zip
+          SOURCE_DIR=$(find . -name "MrRobotoGit-DiscoveryLastFM-*" -type d | head -1)
+          
+          if [ -z "$SOURCE_DIR" ]; then
+            echo "❌ Failed to extract source archive"
             exit 1
           fi
           
-          if [ -d "../DiscoveryLastFM/services" ]; then
-            echo "✅ services directory found"
-          else
-            echo "❌ services directory not found"
-            exit 1
-          fi
+          echo "Source directory: $SOURCE_DIR"
           
-          if [ -d "../DiscoveryLastFM/utils" ]; then
-            echo "✅ utils directory found"
+          # Copy required files to build context
+          cp "$SOURCE_DIR/DiscoveryLastFM.py" ./
+          cp -r "$SOURCE_DIR/services" ./
+          cp -r "$SOURCE_DIR/utils" ./
+          
+          # Cleanup
+          rm -rf source.zip "$SOURCE_DIR"
+          
+          # Verify files exist
+          if [ -f "DiscoveryLastFM.py" ] && [ -d "services" ] && [ -d "utils" ]; then
+            echo "✅ All source files downloaded successfully"
           else
-            echo "❌ utils directory not found"
+            echo "❌ Failed to download required source files"
             exit 1
           fi
-      
-      - name: Prepare build context
-        run: |
-          # Copy source files to current directory for Docker build
-          cp ../DiscoveryLastFM/DiscoveryLastFM.py ./
-          cp -r ../DiscoveryLastFM/services ./
-          cp -r ../DiscoveryLastFM/utils ./
           
           # List what we're building with
           echo "Build context contents:"
           ls -la
           echo "Services contents:"
-          ls -la services/
+          ls -la services/ | head -10
           echo "Utils contents:"  
-          ls -la utils/
+          ls -la utils/ | head -10
       
       - name: Build and push Docker image
         uses: docker/build-push-action@v5

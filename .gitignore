@@ -1,0 +1,26 @@
+# DiscoveryLastFM source files (downloaded during build)
+DiscoveryLastFM.py
+services/
+utils/
+
+# Build artifacts
+*.zip
+build-context/
+source.zip
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker
+.docker/
+
+# Logs
+*.log
+logs/
