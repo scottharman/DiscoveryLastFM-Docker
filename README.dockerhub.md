@@ -8,7 +8,7 @@ Automated music discovery integration for Last.fm and music management systems (
 
 ## 🚀 Quick Start
 
-### Docker Run
+### Docker Run with Lidarr (Recommended)
 ```bash
 docker run -d \
   --name discoverylastfm \
@@ -22,7 +22,21 @@ docker run -d \
   mrrobotogit/discoverylastfm:latest
 ```
 
-### Docker Compose
+### Docker Run with Headphones
+```bash
+docker run -d \
+  --name discoverylastfm \
+  -e LASTFM_USERNAME=your_username \
+  -e LASTFM_API_KEY=your_api_key \
+  -e MUSIC_SERVICE=headphones \
+  -e HP_API_KEY=your_headphones_key \
+  -e HP_ENDPOINT=http://your-headphones:8181 \
+  -v discoverylastfm_config:/app/config \
+  -v discoverylastfm_logs:/app/logs \
+  mrrobotogit/discoverylastfm:latest
+```
+
+### Docker Compose (Lidarr Example)
 ```yaml
 version: '3.8'
 services:
@@ -32,9 +46,14 @@ services:
     environment:
       - LASTFM_USERNAME=your_username
       - LASTFM_API_KEY=your_api_key
+      # For Lidarr:
       - MUSIC_SERVICE=lidarr
       - LIDARR_API_KEY=your_lidarr_key
       - LIDARR_ENDPOINT=http://lidarr:8686
+      # For Headphones (alternative):
+      # - MUSIC_SERVICE=headphones
+      # - HP_API_KEY=your_headphones_key
+      # - HP_ENDPOINT=http://headphones:8181
     volumes:
       - discoverylastfm_config:/app/config
       - discoverylastfm_logs:/app/logs
