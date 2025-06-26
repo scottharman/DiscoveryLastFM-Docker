@@ -213,19 +213,19 @@ docker run --rm \
 ### Auto-Update CLI Commands (v2.1.0+)
 ```bash
 # Check update status
-docker compose exec discoverylastfm --update-status
+docker compose exec discoverylastfm python DiscoveryLastFM.py --update-status
 
 # Install available updates
-docker compose exec discoverylastfm --update
+docker compose exec discoverylastfm python DiscoveryLastFM.py --update
 
 # List available backups
-docker compose exec discoverylastfm --list-backups
+docker compose exec discoverylastfm python DiscoveryLastFM.py --list-backups
 
 # Check version
-docker compose exec discoverylastfm --version
+docker compose exec discoverylastfm python DiscoveryLastFM.py --version
 
 # Clean temporary files
-docker compose exec discoverylastfm --cleanup
+docker compose exec discoverylastfm python DiscoveryLastFM.py --cleanup
 ```
 
 ## 📦 Docker Compose Setup

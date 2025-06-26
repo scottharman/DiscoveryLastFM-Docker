@@ -121,16 +121,19 @@ docker compose up -d  # Restart with new image
 ### v2.1.0 CLI Commands
 ```bash
 # Check for updates
-docker exec discoverylastfm python DiscoveryLastFM.py --update-status
+docker compose exec discoverylastfm python DiscoveryLastFM.py --update-status
 
 # Install updates
-docker exec discoverylastfm python DiscoveryLastFM.py --update
+docker compose exec discoverylastfm python DiscoveryLastFM.py --update
 
 # List backups
-docker exec discoverylastfm python DiscoveryLastFM.py --list-backups
+docker compose exec discoverylastfm python DiscoveryLastFM.py --list-backups
 
 # Check version
-docker exec discoverylastfm python DiscoveryLastFM.py --version
+docker compose exec discoverylastfm python DiscoveryLastFM.py --version
+
+# Clean temporary files
+docker compose exec discoverylastfm python DiscoveryLastFM.py --cleanup
 ```
 
 ## 🏷️ Available Tags
