@@ -358,7 +358,7 @@ setup_compose() {
     
     # Validate compose files
     log_info "Validating Docker Compose configuration..."
-    if docker-compose "${compose_files[@]}" config --quiet; then
+    if docker compose "${compose_files[@]}" config --quiet; then
         log_info "✅ Docker Compose configuration is valid"
     else
         log_error "Docker Compose configuration is invalid"
@@ -366,7 +366,7 @@ setup_compose() {
     fi
     
     # Store compose command for later use
-    echo "docker-compose ${compose_files[*]}" > .compose-command
+    echo "docker compose ${compose_files[*]}" > .compose-command
 }
 
 # Start services
@@ -380,7 +380,7 @@ start_services() {
     if [[ -f ".compose-command" ]]; then
         compose_cmd=$(cat .compose-command)
     else
-        compose_cmd="docker-compose"
+        compose_cmd="docker compose"
     fi
     
     log_info "Starting services with: $compose_cmd"
@@ -431,7 +431,7 @@ show_status() {
     if [[ -f ".compose-command" ]]; then
         compose_cmd=$(cat .compose-command)
     else
-        compose_cmd="docker-compose"
+        compose_cmd="docker compose"
     fi
     
     echo "🎉 DiscoveryLastFM Docker setup completed successfully!"
