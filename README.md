@@ -9,16 +9,22 @@ Containerized version of [DiscoveryLastFM](https://github.com/MrRobotoGit/Discov
 
 > 🎉 **Recently Simplified!** This Docker setup has been streamlined for better usability - simpler configuration, essential services only, and improved docker-compose commands.
 
-## 🆕 What's New in the Simplified Setup
+## 🆕 What's New in v2.1.0 Docker Setup
 
-**Less complexity, same functionality!** The Docker setup has been streamlined to focus on essential components:
+**DiscoveryLastFM v2.1.0 with Auto-Update System + Simplified Docker!**
 
+### 🚀 New v2.1.0 Features:
+- ✅ **Auto-Update System**: GitHub releases monitoring with backup and rollback
+- ✅ **CLI Commands**: `--update`, `--update-status`, `--list-backups`, `--version`, `--cleanup`
+- ✅ **Safe Updates**: Automatic backup creation and verification
+- ✅ **Configurable**: Auto-update intervals, backup retention, pre-release support
+
+### 🐳 Docker Improvements:
 - ✅ **Simpler docker-compose.yml**: From 281 to ~93 lines
-- ✅ **Cleaner .env configuration**: Essential settings only  
+- ✅ **Auto-update ready**: All v2.1.0 environment variables supported
+- ✅ **CLI support**: New commands work in Docker environment
 - ✅ **Core services**: DiscoveryLastFM + Redis cache
 - ✅ **Modern docker compose commands**: Full support for latest Docker Compose
-- ✅ **Easier maintenance**: Reduced configuration overhead
-- ✅ **Updated maintainer**: Matteo Rancilio (MrRobotoGit)
 
 **What was removed:**
 - Optional services (Watchtower, Portainer) - can be added separately if needed
@@ -156,6 +162,16 @@ cd DiscoveryLastFM-Docker
 | `DRY_RUN` | Test mode (no changes) | `false` | `true`, `false` |
 | `DEBUG` | Debug logging | `false` | `true`, `false` |
 
+### Auto-Update System (v2.1.0+)
+
+| Variable | Description | Default | Options |
+|----------|-------------|---------|---------|
+| `AUTO_UPDATE_ENABLED` | Enable auto-update checking | `false` | `true`, `false` |
+| `UPDATE_CHECK_INTERVAL_HOURS` | Check interval in hours | `24` | 1-168 |
+| `BACKUP_RETENTION_DAYS` | Backup retention in days | `7` | 1-30 |
+| `ALLOW_PRERELEASE_UPDATES` | Include pre-releases | `false` | `true`, `false` |
+| `GITHUB_TOKEN` | GitHub API token | `` | Optional for higher limits |
+
 ## 🎯 Operation Modes
 
 ### Sync Mode (One-time)
@@ -192,6 +208,24 @@ docker run --rm \
   -e DISCOVERY_MODE=test \
   # ... config
   mrrobotogit/discoverylastfm:latest
+```
+
+### Auto-Update CLI Commands (v2.1.0+)
+```bash
+# Check update status
+docker compose exec discoverylastfm --update-status
+
+# Install available updates
+docker compose exec discoverylastfm --update
+
+# List available backups
+docker compose exec discoverylastfm --list-backups
+
+# Check version
+docker compose exec discoverylastfm --version
+
+# Clean temporary files
+docker compose exec discoverylastfm --cleanup
 ```
 
 ## 📦 Docker Compose Setup

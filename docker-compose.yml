@@ -48,6 +48,12 @@ services:
       - CONFIG_PATH=/app/config/config.py
       - LOG_PATH=/app/logs
       - CACHE_PATH=/app/cache
+      # === AUTO-UPDATE SYSTEM (v2.1.0+) ===
+      - AUTO_UPDATE_ENABLED=${AUTO_UPDATE_ENABLED:-false}
+      - UPDATE_CHECK_INTERVAL_HOURS=${UPDATE_CHECK_INTERVAL_HOURS:-24}
+      - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-7}
+      - ALLOW_PRERELEASE_UPDATES=${ALLOW_PRERELEASE_UPDATES:-false}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
     volumes:
       - config:/app/config
       - logs:/app/logs

@@ -3,9 +3,9 @@
 [![Docker Pulls](https://img.shields.io/docker/pulls/mrrobotogit/discoverylastfm)](https://hub.docker.com/r/mrrobotogit/discoverylastfm)
 [![Docker Image Size](https://img.shields.io/docker/image-size/mrrobotogit/discoverylastfm/latest)](https://hub.docker.com/r/mrrobotogit/discoverylastfm)
 
-Streamlined Docker container for **DiscoveryLastFM** - automated music discovery that integrates Last.fm with music management systems (Lidarr/Headphones).
+Streamlined Docker container for **DiscoveryLastFM v2.1.0** - automated music discovery that integrates Last.fm with music management systems (Lidarr/Headphones).
 
-> 🎉 **Recently Simplified!** Essential services only with Redis caching for optimal performance.
+> 🎉 **v2.1.0 with Auto-Update System!** GitHub releases monitoring, CLI commands, and simplified Docker setup.
 
 ## 🚀 Quick Start
 
@@ -52,7 +52,8 @@ docker run -d \
 
 ## ✨ What's Included
 
-- **🎵 DiscoveryLastFM**: Main application for music discovery
+- **🎵 DiscoveryLastFM v2.1.0**: Main application with auto-update system
+- **🚀 Auto-Update**: GitHub releases monitoring with backup and rollback
 - **⚡ Redis Cache**: Performance optimization with caching layer
 - **📱 Multi-Architecture**: AMD64 and ARM64 (Raspberry Pi) support  
 - **🔧 Simple Configuration**: Environment-based setup
@@ -89,6 +90,16 @@ docker run -d \
 | `daemon` | Continuous background | `-e SLEEP_HOURS=6` |
 | `test` | Validation mode | `-e DRY_RUN=true` |
 
+### v2.1.0 Auto-Update Configuration
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `AUTO_UPDATE_ENABLED` | Enable auto-update checking | `false` |
+| `UPDATE_CHECK_INTERVAL_HOURS` | Check interval in hours | `24` |
+| `BACKUP_RETENTION_DAYS` | Backup retention in days | `7` |
+| `ALLOW_PRERELEASE_UPDATES` | Include pre-releases | `false` |
+| `GITHUB_TOKEN` | GitHub API token (optional) | `` |
+
 ## 🔧 Management
 
 ### View Logs
@@ -105,6 +116,21 @@ docker exec discoverylastfm /usr/local/bin/health-check
 ```bash
 docker pull mrrobotogit/discoverylastfm:latest
 docker compose up -d  # Restart with new image
+```
+
+### v2.1.0 CLI Commands
+```bash
+# Check for updates
+docker exec discoverylastfm python DiscoveryLastFM.py --update-status
+
+# Install updates
+docker exec discoverylastfm python DiscoveryLastFM.py --update
+
+# List backups
+docker exec discoverylastfm python DiscoveryLastFM.py --list-backups
+
+# Check version
+docker exec discoverylastfm python DiscoveryLastFM.py --version
 ```
 
 ## 🏷️ Available Tags

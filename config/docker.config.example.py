@@ -104,6 +104,28 @@ REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
 REDIS_DB = int(os.getenv("REDIS_DB", "0"))
 
 # =============================================================================
+# AUTO-UPDATE SYSTEM (v2.1.0+ Features)
+# =============================================================================
+# Enable automatic update checking
+AUTO_UPDATE_ENABLED = os.getenv("AUTO_UPDATE_ENABLED", "false").lower() == "true"
+
+# How often to check for updates (in hours)
+UPDATE_CHECK_INTERVAL_HOURS = int(os.getenv("UPDATE_CHECK_INTERVAL_HOURS", "24"))
+
+# How long to keep backup files (in days)
+BACKUP_RETENTION_DAYS = int(os.getenv("BACKUP_RETENTION_DAYS", "7"))
+
+# Allow installation of pre-release versions
+ALLOW_PRERELEASE_UPDATES = os.getenv("ALLOW_PRERELEASE_UPDATES", "false").lower() == "true"
+
+# GitHub personal access token for higher API rate limits (optional)
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
+
+# Auto-update repository information
+GITHUB_REPO_OWNER = "MrRobotoGit"
+GITHUB_REPO_NAME = "DiscoveryLastFM"
+
+# =============================================================================
 # VALIDATION FUNCTIONS
 # =============================================================================
 def validate_configuration():
@@ -152,6 +174,13 @@ def validate_configuration():
     if not 1 <= CACHE_TTL_HOURS <= 168:
         errors.append("CACHE_TTL_HOURS must be between 1 and 168 (1 week)")
     
+    # Validate auto-update settings
+    if not 1 <= UPDATE_CHECK_INTERVAL_HOURS <= 168:
+        errors.append("UPDATE_CHECK_INTERVAL_HOURS must be between 1 and 168 hours")
+    
+    if not 1 <= BACKUP_RETENTION_DAYS <= 30:
+        errors.append("BACKUP_RETENTION_DAYS must be between 1 and 30 days")
+    
     if errors:
         raise ValueError(f"Configuration validation failed:\n- " + "\n- ".join(errors))
     
@@ -170,6 +199,10 @@ def get_container_info():
         "log_path": LOG_PATH,
         "cache_path": CACHE_PATH,
         "redis_enabled": ENABLE_REDIS_CACHE,
+        "auto_update_enabled": AUTO_UPDATE_ENABLED,
+        "update_check_interval": UPDATE_CHECK_INTERVAL_HOURS,
+        "backup_retention": BACKUP_RETENTION_DAYS,
+        "allow_prerelease": ALLOW_PRERELEASE_UPDATES,
         "validation_passed": True
     }
 

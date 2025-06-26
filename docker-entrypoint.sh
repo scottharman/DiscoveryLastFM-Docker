@@ -139,6 +139,15 @@ MBZ_DELAY = ${MBZ_DELAY:-1.1}
 
 # === DEBUGGING ===
 DEBUG_PRINT = ${DEBUG_PRINT:-False}
+
+# === AUTO-UPDATE SYSTEM (v2.1.0+) ===
+AUTO_UPDATE_ENABLED = ${AUTO_UPDATE_ENABLED:-False}
+UPDATE_CHECK_INTERVAL_HOURS = ${UPDATE_CHECK_INTERVAL_HOURS:-24}
+BACKUP_RETENTION_DAYS = ${BACKUP_RETENTION_DAYS:-7}
+ALLOW_PRERELEASE_UPDATES = ${ALLOW_PRERELEASE_UPDATES:-False}
+GITHUB_TOKEN = "${GITHUB_TOKEN:-}"
+GITHUB_REPO_OWNER = "MrRobotoGit"
+GITHUB_REPO_NAME = "DiscoveryLastFM"
 EOF
     
     log_info "Configuration created from environment variables"
@@ -258,6 +267,12 @@ main() {
     
     # Change to app directory
     cd /app
+    
+    # Handle v2.1.0 CLI commands first
+    if [[ "$1" == "--update" || "$1" == "--update-status" || "$1" == "--list-backups" || "$1" == "--version" || "$1" == "--cleanup" ]]; then
+        log_info "Executing DiscoveryLastFM CLI command: $1"
+        exec python DiscoveryLastFM.py "$@"
+    fi
     
     case "$DISCOVERY_MODE" in
         "sync")
