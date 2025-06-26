@@ -39,7 +39,7 @@ LABEL org.opencontainers.image.title="DiscoveryLastFM"
 LABEL org.opencontainers.image.description="Simplified automated music discovery integration for Last.fm, Headphones, and Lidarr"
 LABEL org.opencontainers.image.url="https://github.com/MrRobotoGit/DiscoveryLastFM"
 LABEL org.opencontainers.image.source="https://github.com/MrRobotoGit/DiscoveryLastFM-Docker"
-LABEL org.opencontainers.image.version="2.1.1"
+LABEL org.opencontainers.image.version="2.1.0"
 LABEL org.opencontainers.image.licenses="MIT"
 
 # Install runtime dependencies only
