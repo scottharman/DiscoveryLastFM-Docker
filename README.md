@@ -7,21 +7,38 @@
 
 Containerized version of [DiscoveryLastFM](https://github.com/MrRobotoGit/DiscoveryLastFM) - an automated music discovery tool that integrates Last.fm with music management systems (Lidarr/Headphones).
 
+> 🎉 **Recently Simplified!** This Docker setup has been streamlined for better usability - simpler configuration, essential services only, and improved docker-compose commands.
+
+## 🆕 What's New in the Simplified Setup
+
+**Less complexity, same functionality!** The Docker setup has been streamlined to focus on essential components:
+
+- ✅ **Simpler docker-compose.yml**: From 281 to ~93 lines
+- ✅ **Cleaner .env configuration**: Essential settings only
+- ✅ **Core services**: DiscoveryLastFM + Redis cache
+- ✅ **Modern docker compose commands**: Full support for latest Docker Compose
+- ✅ **Easier maintenance**: Reduced configuration overhead
+
+**What was removed:**
+- Optional services (Watchtower, Portainer) - can be added separately if needed
+- Complex networking configurations - uses Docker defaults
+- Advanced resource limits - simplified for most use cases
+
 ## 🚀 Quick Start
 
 ### Option 1: Docker Compose (Recommended)
 
 ```bash
-# Download the setup files
+# Download the simplified setup files
 curl -O https://raw.githubusercontent.com/MrRobotoGit/DiscoveryLastFM-Docker/main/docker-compose.yml
 curl -O https://raw.githubusercontent.com/MrRobotoGit/DiscoveryLastFM-Docker/main/.env.example
 
-# Configure your environment
+# Configure your environment (minimal setup required)
 cp .env.example .env
-nano .env  # Edit with your credentials
+nano .env  # Edit with your Last.fm and Lidarr/Headphones credentials
 
-# Start the stack
-docker-compose up -d
+# Start the streamlined stack (DiscoveryLastFM + Redis)
+docker compose up -d
 ```
 
 ### Option 2: Docker Run
@@ -70,19 +87,17 @@ cd DiscoveryLastFM-Docker
 ### ✨ What's Included
 
 - **🎵 DiscoveryLastFM**: Main application for music discovery
-- **🎧 Lidarr Integration**: Modern music collection manager
+- **⚡ Redis Cache**: Improved performance with caching layer
 - **📱 Multi-Architecture**: AMD64 and ARM64 (Raspberry Pi) support
-- **🔄 Auto-Updates**: Watchtower for automatic container updates
-- **📊 Health Monitoring**: Built-in health checks and monitoring
-- **🔧 Easy Configuration**: Environment-based configuration
+- **🔧 Simple Configuration**: Streamlined environment-based setup
 - **📈 Performance Optimized**: Multi-stage build, minimal base image
+- **📊 Health Monitoring**: Built-in health checks and monitoring
 
-### 🛠️ Optional Services
+### 🛠️ Integration Support
 
-- **Lidarr**: Music collection management
-- **Redis**: Caching layer for improved performance
-- **Portainer**: Container management UI
-- **Watchtower**: Automatic updates
+- **Lidarr**: Modern music collection manager
+- **Headphones**: Alternative music management system
+- **Last.fm API**: Music discovery and statistics
 
 ## 🏗️ Architecture
 
@@ -177,59 +192,59 @@ docker run --rm \
   mrrobotogit/discoverylastfm:latest
 ```
 
-## 📦 Docker Compose Profiles
+## 📦 Docker Compose Setup
 
-### Default Profile (Full Stack)
+### Default Setup (Simplified)
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
-Includes: DiscoveryLastFM, Lidarr, Redis, Watchtower
+Includes: DiscoveryLastFM + Redis cache
 
 ### Development Profile
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
-Includes: All services + development tools + log viewer
+Includes: Development tools + debugging + log viewer
 
-### Minimal Profile
+### Quick Start (No Redis)
 ```bash
-docker-compose -f docker-compose.minimal.yml up -d
+# Edit docker-compose.yml to remove Redis dependency
+docker compose up -d discoverylastfm
 ```
-Includes: DiscoveryLastFM only
 
 ## 🔧 Management Commands
 
 ### View Logs
 ```bash
 # All services
-docker-compose logs -f
+docker compose logs -f
 
 # Specific service
-docker-compose logs -f discoverylastfm
+docker compose logs -f discoverylastfm
 ```
 
 ### Health Check
 ```bash
 # Container health
-docker-compose exec discoverylastfm /usr/local/bin/health-check
+docker compose exec discoverylastfm /usr/local/bin/health-check
 
 # Service status
-docker-compose ps
+docker compose ps
 ```
 
 ### Update Images
 ```bash
 # Pull latest images
-docker-compose pull
+docker compose pull
 
 # Restart with new images
-docker-compose up -d
+docker compose up -d
 ```
 
 ### Configuration Test
 ```bash
 # Test configuration
-docker-compose exec discoverylastfm python /app/config/config.py
+docker compose exec discoverylastfm python /app/config/config.py
 ```
 
 ## 🚨 Troubleshooting
@@ -239,28 +254,28 @@ docker-compose exec discoverylastfm python /app/config/config.py
 #### Container Won't Start
 ```bash
 # Check logs
-docker-compose logs discoverylastfm
+docker compose logs discoverylastfm
 
 # Validate configuration
-docker-compose exec discoverylastfm /usr/local/bin/health-check config
+docker compose exec discoverylastfm /usr/local/bin/health-check config
 ```
 
 #### Last.fm Connection Issues
 ```bash
 # Test Last.fm connectivity
-docker-compose exec discoverylastfm curl -f "http://ws.audioscrobbler.com/2.0/?method=user.getinfo&user=${LASTFM_USERNAME}&api_key=${LASTFM_API_KEY}&format=json"
+docker compose exec discoverylastfm curl -f "http://ws.audioscrobbler.com/2.0/?method=user.getinfo&user=${LASTFM_USERNAME}&api_key=${LASTFM_API_KEY}&format=json"
 ```
 
 #### Lidarr Connection Issues
 ```bash
 # Test Lidarr connectivity
-docker-compose exec discoverylastfm curl -f -H "X-Api-Key: ${LIDARR_API_KEY}" "${LIDARR_ENDPOINT}/api/v1/system/status"
+docker compose exec discoverylastfm curl -f -H "X-Api-Key: ${LIDARR_API_KEY}" "${LIDARR_ENDPOINT}/api/v1/system/status"
 ```
 
 ### Debug Mode
 ```bash
 # Enable debug logging
-docker-compose exec discoverylastfm sh -c 'export DEBUG=true && python /app/DiscoveryLastFM.py'
+docker compose exec discoverylastfm sh -c 'export DEBUG=true && python /app/DiscoveryLastFM.py'
 ```
 
 ## 🎛️ Advanced Configuration
@@ -366,23 +381,21 @@ services:
 
 ## 🤖 Automation
 
-### Automatic Updates
-Watchtower automatically updates containers when new images are available:
-
-```yaml
-watchtower:
-  image: containrrr/watchtower
-  environment:
-    - WATCHTOWER_POLL_INTERVAL=86400  # Check daily
-    - WATCHTOWER_CLEANUP=true
-```
-
 ### Backup Automation
 ```bash
 # Backup script
 #!/bin/bash
-docker-compose exec discoverylastfm tar czf /tmp/backup.tar.gz /app/config /app/cache
+docker compose exec discoverylastfm tar czf /tmp/backup.tar.gz /app/config /app/cache
 docker cp discoverylastfm:/tmp/backup.tar.gz ./backup-$(date +%Y%m%d).tar.gz
+```
+
+### Automated Image Updates
+```bash
+# Update script
+#!/bin/bash
+docker compose pull
+docker compose up -d
+docker image prune -f
 ```
 
 ## 🏷️ Available Tags
@@ -399,7 +412,7 @@ docker cp discoverylastfm:/tmp/backup.tar.gz ./backup-$(date +%Y%m%d).tar.gz
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Test with `docker-compose -f docker-compose.dev.yml up`
+4. Test with `docker compose -f docker-compose.yml -f docker-compose.dev.yml up`
 5. Submit a pull request
 
 ## 📄 License
