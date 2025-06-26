@@ -14,15 +14,17 @@ Containerized version of [DiscoveryLastFM](https://github.com/MrRobotoGit/Discov
 **Less complexity, same functionality!** The Docker setup has been streamlined to focus on essential components:
 
 - ✅ **Simpler docker-compose.yml**: From 281 to ~93 lines
-- ✅ **Cleaner .env configuration**: Essential settings only
+- ✅ **Cleaner .env configuration**: Essential settings only  
 - ✅ **Core services**: DiscoveryLastFM + Redis cache
 - ✅ **Modern docker compose commands**: Full support for latest Docker Compose
 - ✅ **Easier maintenance**: Reduced configuration overhead
+- ✅ **Updated maintainer**: Matteo Rancilio (MrRobotoGit)
 
 **What was removed:**
 - Optional services (Watchtower, Portainer) - can be added separately if needed
 - Complex networking configurations - uses Docker defaults
 - Advanced resource limits - simplified for most use cases
+- Lidarr service from compose (integrate with existing external instance)
 
 ## 🚀 Quick Start
 
@@ -99,13 +101,13 @@ cd DiscoveryLastFM-Docker
 - **Headphones**: Alternative music management system
 - **Last.fm API**: Music discovery and statistics
 
-## 🏗️ Architecture
+## 🏗️ Simplified Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Last.fm API   │────│ DiscoveryLastFM │────│  Lidarr/Headphones  │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-
+│   Last.fm API   │────│ DiscoveryLastFM │────│  Lidarr/Headphones │
+└─────────────────┘    │    + Redis      │    └─────────────────┘
+                       └─────────────────┘
 ```
 
 ## 📖 Configuration
@@ -204,12 +206,13 @@ Includes: DiscoveryLastFM + Redis cache
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
-Includes: Development tools + debugging + log viewer
+Includes: Development tools + debugging + log viewer + additional services
 
-### Quick Start (No Redis)
+### Standalone Mode (No Redis)
 ```bash
-# Edit docker-compose.yml to remove Redis dependency
+# Remove Redis dependency and start only main service
 docker compose up -d discoverylastfm
+# Note: This will skip Redis health check dependency
 ```
 
 ## 🔧 Management Commands
@@ -280,32 +283,6 @@ docker compose exec discoverylastfm sh -c 'export DEBUG=true && python /app/Disc
 
 ## 🎛️ Advanced Configuration
 
-### Custom Network
-```yaml
-networks:
-  music_network:
-    external: true
-
-services:
-  discoverylastfm:
-    networks:
-      - music_network
-```
-
-### Resource Limits
-```yaml
-services:
-  discoverylastfm:
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 128M
-```
-
 ### Custom Volumes
 ```yaml
 services:
@@ -316,34 +293,29 @@ services:
       - /host/path/to/music:/music:ro
 ```
 
+### External Music Service Integration
+```yaml
+# If you have Lidarr running externally
+services:
+  discoverylastfm:
+    environment:
+      - LIDARR_ENDPOINT=http://your-lidarr-host:8686
+    # Remove depends_on if using external services
+```
+
 ## 🔐 Security
 
 ### Non-Root User
 The container runs as a non-root user (`discoverylastfm:1000`) for security.
 
-### Secrets Management
-```yaml
-# Using Docker secrets
-services:
-  discoverylastfm:
-    environment:
-      - LASTFM_API_KEY_FILE=/run/secrets/lastfm_api_key
-    secrets:
-      - lastfm_api_key
+### Environment File Security
+```bash
+# Secure your .env file
+chmod 600 .env
 
-secrets:
-  lastfm_api_key:
-    file: ./secrets/lastfm_api_key.txt
-```
-
-### Network Security
-```yaml
-# Restrict network access
-services:
-  discoverylastfm:
-    networks:
-      - internal
-    # No external ports exposed
+# Use environment variables instead of hardcoded values
+export LASTFM_API_KEY="your_api_key_here"
+docker compose up -d
 ```
 
 ## 📊 Monitoring
@@ -356,15 +328,11 @@ Built-in health checks monitor:
 - Disk space
 - Recent activity
 
-### Metrics (Optional)
-```yaml
-# Enable metrics endpoint
-services:
-  discoverylastfm:
-    ports:
-      - "8080:8080"  # Metrics port
-    environment:
-      - ENABLE_METRICS=true
+### Access Application
+```bash
+# The application exposes port 8080 for health checks
+# Check if it's running:
+curl http://localhost:8080/health
 ```
 
 ### Log Aggregation
@@ -402,10 +370,9 @@ docker image prune -f
 
 | Tag | Description | Architecture |
 |-----|-------------|--------------|
-| `latest` | Latest stable release | `amd64`, `arm64` |
+| `latest` | Latest stable release (v2.1.0) | `amd64`, `arm64` |
 | `v2.1.0` | Current stable version | `amd64`, `arm64` |
 | `main` | Development branch | `amd64`, `arm64` |
-| `security-*` | Security updates | `amd64`, `arm64` |
 
 ## 🤝 Contributing
 
