@@ -45,6 +45,32 @@ DRY_RUN="${DRY_RUN:-false}"
 DEBUG="${DEBUG:-false}"
 
 # ==============================================================================
+# User/Group Management
+# ==============================================================================
+
+setup_user() {
+    # Support for PUID/PGID environment variables (like LinuxServer.io containers)
+    local PUID=${PUID:-1000}
+    local PGID=${PGID:-1000}
+    
+    # Only modify user if running as root and PUID/PGID are different
+    if [[ "$(id -u)" -eq 0 ]] && [[ "$PUID" != "1000" || "$PGID" != "1000" ]]; then
+        log_info "Modifying user permissions: PUID=$PUID, PGID=$PGID"
+        
+        # Modify the user and group IDs
+        groupmod -o -g "$PGID" discoverylastfm 2>/dev/null || true
+        usermod -o -u "$PUID" discoverylastfm 2>/dev/null || true
+        
+        # Ensure proper ownership of app directories
+        chown -R "$PUID:$PGID" /app 2>/dev/null || log_warn "Cannot chown /app (mounted volume)"
+        
+        log_info "User setup completed"
+    else
+        log_debug "Using default user (UID=$(id -u), GID=$(id -g))"
+    fi
+}
+
+# ==============================================================================
 # Configuration Management
 # ==============================================================================
 
@@ -87,7 +113,19 @@ setup_configuration() {
 }
 
 create_config_from_env() {
-    cat > "$CONFIG_PATH" << EOF
+    # Check if we can write to the config directory
+    local config_dir
+    config_dir="$(dirname "$CONFIG_PATH")"
+    
+    if [[ ! -w "$config_dir" ]]; then
+        log_error "Cannot write to config directory $config_dir. Using read-only fallback."
+        # Use a temporary config in container filesystem
+        CONFIG_PATH="/tmp/config.py"
+        log_warn "Using temporary config at $CONFIG_PATH"
+    fi
+    
+    # Attempt to write configuration
+    if ! cat > "$CONFIG_PATH" << EOF
 # DiscoveryLastFM Configuration - Generated from Environment Variables
 # Generated at: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
 
@@ -149,8 +187,12 @@ GITHUB_TOKEN = "${GITHUB_TOKEN:-}"
 GITHUB_REPO_OWNER = "MrRobotoGit"
 GITHUB_REPO_NAME = "DiscoveryLastFM"
 EOF
-    
-    log_info "Configuration created from environment variables"
+    then
+        log_info "Configuration created from environment variables at $CONFIG_PATH"
+    else
+        log_error "Failed to write configuration file. Please check permissions."
+        return 1
+    fi
 }
 
 # ==============================================================================
@@ -163,8 +205,18 @@ setup_logging() {
     # Create logs directory if it doesn't exist
     mkdir -p "$LOG_PATH"
     
-    # Set proper permissions
-    chmod 755 "$LOG_PATH"
+    # Set proper permissions (ignore failures on mounted volumes)
+    if chmod 755 "$LOG_PATH" 2>/dev/null; then
+        log_debug "Set permissions on $LOG_PATH"
+    else
+        log_warn "Cannot set permissions on $LOG_PATH (mounted volume - this is normal)"
+    fi
+    
+    # Check if directory is writable
+    if [[ ! -w "$LOG_PATH" ]]; then
+        log_error "Log directory $LOG_PATH is not writable. Check volume permissions."
+        return 1
+    fi
     
     log_debug "Log directory ready at $LOG_PATH"
 }
@@ -179,8 +231,18 @@ setup_cache() {
     # Create cache directory if it doesn't exist
     mkdir -p "$CACHE_PATH"
     
-    # Set proper permissions
-    chmod 755 "$CACHE_PATH"
+    # Set proper permissions (ignore failures on mounted volumes)
+    if chmod 755 "$CACHE_PATH" 2>/dev/null; then
+        log_debug "Set permissions on $CACHE_PATH"
+    else
+        log_warn "Cannot set permissions on $CACHE_PATH (mounted volume - this is normal)"
+    fi
+    
+    # Check if directory is writable
+    if [[ ! -w "$CACHE_PATH" ]]; then
+        log_error "Cache directory $CACHE_PATH is not writable. Check volume permissions."
+        return 1
+    fi
     
     log_debug "Cache directory ready at $CACHE_PATH"
 }
@@ -255,6 +317,7 @@ main() {
     log_info "Debug: $DEBUG"
     
     # Setup steps
+    setup_user
     setup_configuration
     setup_logging
     setup_cache

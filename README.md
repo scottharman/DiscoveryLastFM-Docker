@@ -297,6 +297,39 @@ docker compose logs discoverylastfm
 docker compose exec discoverylastfm /usr/local/bin/health-check config
 ```
 
+#### macOS/Windows Docker Desktop Issues
+
+**Problem**: Container crashes with `chmod: changing permissions of '/app/logs': Operation not permitted`
+
+**Solution**: This is normal on macOS/Windows Docker Desktop due to filesystem differences. The container now handles this gracefully, but if you still have issues:
+
+```bash
+# Option 1: Use PUID/PGID (recommended)
+echo "PUID=$(id -u)" >> .env
+echo "PGID=$(id -g)" >> .env
+docker compose up -d
+
+# Option 2: Use bind mounts with proper permissions
+# Create local directories first
+mkdir -p ./data/{config,logs,cache}
+# Then modify docker-compose.yml volumes section:
+# volumes:
+#   - ./data/config:/app/config
+#   - ./data/logs:/app/logs
+#   - ./data/cache:/app/cache
+```
+
+**Problem**: `Permission denied` when creating config.py
+
+**Solution**: The container will automatically use a fallback location. Check if you have a read-only volume mount:
+
+```bash
+# Ensure config volume is writable
+docker compose down
+docker volume rm discoverylastfm_config  # Remove if readonly
+docker compose up -d
+```
+
 #### Last.fm Connection Issues
 ```bash
 # Test Last.fm connectivity

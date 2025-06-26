@@ -54,6 +54,9 @@ services:
       - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-7}
       - ALLOW_PRERELEASE_UPDATES=${ALLOW_PRERELEASE_UPDATES:-false}
       - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      # === VOLUME PERMISSIONS (Optional - for Docker Desktop compatibility) ===
+      - PUID=${PUID:-1000}  # User ID for file permissions
+      - PGID=${PGID:-1000}  # Group ID for file permissions
     volumes:
       - config:/app/config
       - logs:/app/logs

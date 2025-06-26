@@ -155,6 +155,19 @@ docker logs discoverylastfm
 docker exec discoverylastfm /usr/local/bin/health-check config
 ```
 
+### macOS/Windows Permission Issues
+**Problem**: `chmod: Operation not permitted` or endless restarts
+
+**Solutions**:
+```bash
+# Use PUID/PGID environment variables
+docker run -e PUID=1000 -e PGID=1000 ... mrrobotogit/discoverylastfm
+
+# Or use bind mounts with local directories
+mkdir -p ./data/{config,logs,cache}
+docker run -v ./data/config:/app/config ... mrrobotogit/discoverylastfm
+```
+
 ### Service Connection Issues
 ```bash
 # Test Last.fm connectivity
