@@ -8,6 +8,8 @@ services:
     image: mrrobotogit/discoverylastfm:latest
     container_name: discoverylastfm
     hostname: discoverylastfm
+    ports:
+      - 8080:8080
     environment:
       # === OPERATION MODE ===
       - DISCOVERY_MODE=cron              # sync, cron, daemon, test

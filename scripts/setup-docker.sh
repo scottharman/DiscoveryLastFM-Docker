@@ -351,25 +351,8 @@ setup_compose() {
             compose_files+=("-f" "docker-compose.dev.yml")
             log_info "Using development profile"
             ;;
-        minimal)
-            # Create minimal compose file
-            cat > docker-compose.minimal.yml << 'EOF'
-version: '3.8'
-
-services:
-  discoverylastfm:
-    extends:
-      file: docker-compose.yml
-      service: discoverylastfm
-    depends_on: []
-    ports:
-      - "8080:8080"
-EOF
-            compose_files=("-f" "docker-compose.minimal.yml")
-            log_info "Using minimal profile (DiscoveryLastFM only)"
-            ;;
         default)
-            log_info "Using default profile (full stack)"
+            log_info "Using default profile"
             ;;
     esac
     
