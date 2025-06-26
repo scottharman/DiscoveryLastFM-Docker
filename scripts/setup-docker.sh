@@ -311,7 +311,7 @@ interactive_config() {
 
 # Build Docker images
 build_images() {
-    if [[ "${NO_BUILD:-false}" == "true" ]]; then
+    if [[ "${NO_BUILD:-true}" == "true" ]]; then
         log_info "Skipping image build"
         return 0
     fi
@@ -321,7 +321,7 @@ build_images() {
     cd "$PROJECT_DIR"
     
     # Pull base images
-    if [[ "${NO_PULL:-false}" != "true" ]]; then
+    if [[ "${NO_PULL:-true}" != "true" ]]; then
         log_info "Pulling latest base images..."
         docker pull python:3.11-slim
     fi
@@ -351,31 +351,14 @@ setup_compose() {
             compose_files+=("-f" "docker-compose.dev.yml")
             log_info "Using development profile"
             ;;
-        minimal)
-            # Create minimal compose file
-            cat > docker-compose.minimal.yml << 'EOF'
-version: '3.8'
-
-services:
-  discoverylastfm:
-    extends:
-      file: docker-compose.yml
-      service: discoverylastfm
-    depends_on: []
-    ports:
-      - "8080:8080"
-EOF
-            compose_files=("-f" "docker-compose.minimal.yml")
-            log_info "Using minimal profile (DiscoveryLastFM only)"
-            ;;
         default)
-            log_info "Using default profile (full stack)"
+            log_info "Using default profile"
             ;;
     esac
     
     # Validate compose files
     log_info "Validating Docker Compose configuration..."
-    if docker-compose "${compose_files[@]}" config --quiet; then
+    if docker compose "${compose_files[@]}" config --quiet; then
         log_info "✅ Docker Compose configuration is valid"
     else
         log_error "Docker Compose configuration is invalid"
@@ -383,7 +366,7 @@ EOF
     fi
     
     # Store compose command for later use
-    echo "docker-compose ${compose_files[*]}" > .compose-command
+    echo "docker compose ${compose_files[*]}" > .compose-command
 }
 
 # Start services
@@ -397,7 +380,7 @@ start_services() {
     if [[ -f ".compose-command" ]]; then
         compose_cmd=$(cat .compose-command)
     else
-        compose_cmd="docker-compose"
+        compose_cmd="docker compose"
     fi
     
     log_info "Starting services with: $compose_cmd"
@@ -448,7 +431,7 @@ show_status() {
     if [[ -f ".compose-command" ]]; then
         compose_cmd=$(cat .compose-command)
     else
-        compose_cmd="docker-compose"
+        compose_cmd="docker compose"
     fi
     
     echo "🎉 DiscoveryLastFM Docker setup completed successfully!"
