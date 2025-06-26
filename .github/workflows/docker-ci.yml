@@ -59,8 +59,17 @@ jobs:
       
       - name: Validate Docker Compose files
         run: |
-          docker compose -f docker-compose.yml config --quiet
-          docker compose -f docker-compose.yml -f docker-compose.dev.yml config --quiet
+          # Try docker compose (v2) first, fallback to docker-compose (v1)
+          if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+            docker compose -f docker-compose.yml config --quiet
+            docker compose -f docker-compose.yml -f docker-compose.dev.yml config --quiet
+          elif command -v docker-compose >/dev/null 2>&1; then
+            docker-compose -f docker-compose.yml config --quiet
+            docker-compose -f docker-compose.yml -f docker-compose.dev.yml config --quiet
+          else
+            echo "Neither docker compose nor docker-compose found"
+            exit 1
+          fi
       
       - name: Lint Dockerfile
         uses: hadolint/hadolint-action@v3.1.0
