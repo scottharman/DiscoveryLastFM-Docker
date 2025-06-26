@@ -59,8 +59,8 @@ jobs:
       
       - name: Validate Docker Compose files
         run: |
-          docker-compose -f docker-compose.yml config --quiet
-          docker-compose -f docker-compose.yml -f docker-compose.dev.yml config --quiet
+          docker compose -f docker-compose.yml config --quiet
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml config --quiet
       
       - name: Lint Dockerfile
         uses: hadolint/hadolint-action@v3.1.0
@@ -214,18 +214,18 @@ jobs:
       - name: Test container startup
         run: |
           # Start services
-          docker-compose -f ${{ matrix.test-scenario.compose-file }} up -d
+          docker compose -f ${{ matrix.test-scenario.compose-file }} up -d
           
           # Wait for health checks
           timeout 60s bash -c 'until docker-compose -f ${{ matrix.test-scenario.compose-file }} ps | grep -q "healthy"; do sleep 2; done'
           
           # Run health check
-          docker-compose -f ${{ matrix.test-scenario.compose-file }} exec -T discoverylastfm /usr/local/bin/health-check config
+          docker compose -f ${{ matrix.test-scenario.compose-file }} exec -T discoverylastfm /usr/local/bin/health-check config
       
       - name: Test application functionality
         run: |
           # Test configuration validation
-          docker-compose -f ${{ matrix.test-scenario.compose-file }} exec -T discoverylastfm python -c "
+          docker compose -f ${{ matrix.test-scenario.compose-file }} exec -T discoverylastfm python -c "
           import sys
           sys.path.append('/app')
           try:
@@ -240,7 +240,7 @@ jobs:
         if: always()
         run: |
           mkdir -p test-logs
-          docker-compose -f ${{ matrix.test-scenario.compose-file }} logs > test-logs/compose-${{ strategy.job-index }}.log
+          docker compose -f ${{ matrix.test-scenario.compose-file }} logs > test-logs/compose-${{ strategy.job-index }}.log
       
       - name: Upload test logs
         if: always()
@@ -253,7 +253,7 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          docker-compose -f ${{ matrix.test-scenario.compose-file }} down -v
+          docker compose -f ${{ matrix.test-scenario.compose-file }} down -v
           docker system prune -f
 
   # ==========================================================================
@@ -332,7 +332,7 @@ jobs:
           
           # Measure startup time
           start_time=$(date +%s)
-          docker-compose up -d discoverylastfm
+          docker compose up -d discoverylastfm
           
           # Wait for healthy status
           timeout 60s bash -c 'until [ "$(docker inspect --format="{{.State.Health.Status}}" discoverylastfm)" = "healthy" ]; do sleep 1; done'
@@ -355,7 +355,7 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          docker-compose down -v
+          docker compose down -v
           docker system prune -f
 
   # ==========================================================================
