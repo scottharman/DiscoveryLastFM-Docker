@@ -271,12 +271,12 @@ interactive_config() {
     
     # Ask for basic configuration
     echo ""
-    read -p "Enter your Last.fm username: " lastfm_user
+    read -r -p "Enter your Last.fm username: " lastfm_user
     if [[ -n "$lastfm_user" ]]; then
         sed -i "s/LASTFM_USERNAME=.*/LASTFM_USERNAME=$lastfm_user/" "$PROJECT_DIR/.env"
     fi
     
-    read -p "Enter your Last.fm API key: " lastfm_key
+    read -r -p "Enter your Last.fm API key: " lastfm_key
     if [[ -n "$lastfm_key" ]]; then
         sed -i "s/LASTFM_API_KEY=.*/LASTFM_API_KEY=$lastfm_key/" "$PROJECT_DIR/.env"
     fi
@@ -285,13 +285,13 @@ interactive_config() {
     echo "Which music service do you want to use?"
     echo "1) Lidarr (recommended)"
     echo "2) Headphones"
-    read -p "Choice [1]: " music_service_choice
+    read -r -p "Choice [1]: " music_service_choice
     
     case "${music_service_choice:-1}" in
         1)
             sed -i "s/MUSIC_SERVICE=.*/MUSIC_SERVICE=lidarr/" "$PROJECT_DIR/.env"
             echo ""
-            read -p "Enter your Lidarr API key: " lidarr_key
+            read -r -p "Enter your Lidarr API key: " lidarr_key
             if [[ -n "$lidarr_key" ]]; then
                 sed -i "s/LIDARR_API_KEY=.*/LIDARR_API_KEY=$lidarr_key/" "$PROJECT_DIR/.env"
             fi
@@ -299,7 +299,7 @@ interactive_config() {
         2)
             sed -i "s/MUSIC_SERVICE=.*/MUSIC_SERVICE=headphones/" "$PROJECT_DIR/.env"
             echo ""
-            read -p "Enter your Headphones API key: " hp_key
+            read -r -p "Enter your Headphones API key: " hp_key
             if [[ -n "$hp_key" ]]; then
                 sed -i "s/HP_API_KEY=.*/HP_API_KEY=$hp_key/" "$PROJECT_DIR/.env"
             fi

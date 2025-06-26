@@ -9,7 +9,7 @@ set -euo pipefail
 # Default paths
 CONFIG_PATH="${CONFIG_PATH:-/app/config/config.py}"
 LOG_PATH="${LOG_PATH:-/app/logs}"
-APP_PID_FILE="/tmp/discoverylastfm.pid"
+# APP_PID_FILE="/tmp/discoverylastfm.pid"  # Currently unused
 
 # Health check timeout
 TIMEOUT=${HEALTH_CHECK_TIMEOUT:-10}
@@ -44,7 +44,7 @@ check_configuration() {
     fi
     
     # Test configuration loading
-    if ! timeout $TIMEOUT python -c "exec(open('$CONFIG_PATH').read()); print('Config OK')" >/dev/null 2>&1; then
+    if ! timeout "$TIMEOUT" python -c "exec(open('$CONFIG_PATH').read()); print('Config OK')" >/dev/null 2>&1; then
         log_error "Configuration validation failed"
         return $EXIT_CRITICAL
     fi
@@ -72,7 +72,7 @@ check_application_files() {
 
 check_python_imports() {
     # Test critical imports
-    if ! timeout $TIMEOUT python -c "
+    if ! timeout "$TIMEOUT" python -c "
 import sys
 sys.path.append('/app')
 
@@ -250,13 +250,13 @@ main() {
         else
             local status=$?
             case $status in
-                $EXIT_WARNING)
+                "$EXIT_WARNING")
                     log_info "⚠️  $name: WARNING"
                     if [[ $overall_status -eq $EXIT_OK ]]; then
                         overall_status=$EXIT_WARNING
                     fi
                     ;;
-                $EXIT_CRITICAL)
+                "$EXIT_CRITICAL")
                     log_error "❌ $name: CRITICAL"
                     overall_status=$EXIT_CRITICAL
                     ;;
@@ -272,13 +272,13 @@ main() {
     
     # Final status
     case $overall_status in
-        $EXIT_OK)
+        "$EXIT_OK")
             log_info "🎉 Health check PASSED - All systems operational"
             ;;
-        $EXIT_WARNING)
+        "$EXIT_WARNING")
             log_info "⚠️  Health check completed with WARNINGS"
             ;;
-        $EXIT_CRITICAL)
+        "$EXIT_CRITICAL")
             log_error "❌ Health check FAILED - Critical issues detected"
             ;;
         *)
