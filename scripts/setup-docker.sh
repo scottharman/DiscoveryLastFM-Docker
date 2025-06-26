@@ -311,7 +311,7 @@ interactive_config() {
 
 # Build Docker images
 build_images() {
-    if [[ "${NO_BUILD:-false}" == "true" ]]; then
+    if [[ "${NO_BUILD:-true}" == "true" ]]; then
         log_info "Skipping image build"
         return 0
     fi
@@ -321,7 +321,7 @@ build_images() {
     cd "$PROJECT_DIR"
     
     # Pull base images
-    if [[ "${NO_PULL:-false}" != "true" ]]; then
+    if [[ "${NO_PULL:-true}" != "true" ]]; then
         log_info "Pulling latest base images..."
         docker pull python:3.11-slim
     fi
