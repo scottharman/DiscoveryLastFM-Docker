@@ -25,6 +25,7 @@ Containerized version of [DiscoveryLastFM](https://github.com/MrRobotoGit/Discov
 - ✅ **CLI support**: New commands work in Docker environment
 - ✅ **Core services**: DiscoveryLastFM + Redis cache
 - ✅ **Modern docker compose commands**: Full support for latest Docker Compose
+- ✅ **Streamlined CI/CD**: Production-focused workflow for reliable builds
 
 **What was removed:**
 - Optional services (Watchtower, Portainer) - can be added separately if needed
