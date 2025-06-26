@@ -58,7 +58,7 @@ services:
       # - /path/to/music:/music:ro
     # Health check
     healthcheck:
-      test: ["/usr/local/bin/health-check", "quick"]
+      test: ["CMD", "/usr/local/bin/health-check", "quick"]
       interval: 30s
       timeout: 10s
       retries: 3
