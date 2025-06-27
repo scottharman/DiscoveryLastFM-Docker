@@ -353,23 +353,22 @@ setup_cron() {
     # Ensure directories exist (skip permission changes that might fail)
     mkdir -p /var/run /var/log /var/spool/cron/crontabs 2>/dev/null || true
     
-    # Start cron daemon directly in background
-    crond -f -d 8 &
-    local cron_pid=$!
+    # Start cron daemon using service
+    service cron start
     
     # Give cron a moment to start
     sleep 2
     
     # Verify cron is running
-    if pgrep crond > /dev/null; then
-        log_info "✅ Cron daemon started successfully (PID: $cron_pid)"
+    if ps aux | grep -v grep | grep cron > /dev/null; then
+        log_info "✅ Cron daemon started successfully"
     else
-        log_warn "⚠️ Cron daemon failed to start, trying alternative approach..."
-        # Try with different options
-        crond -L /var/log/cron.log &
+        log_warn "⚠️ Cron daemon failed to start, trying direct approach..."
+        # Try with cron in background
+        cron &
         sleep 1
-        if pgrep crond > /dev/null; then
-            log_info "✅ Cron daemon started with alternative method"
+        if ps aux | grep -v grep | grep cron > /dev/null; then
+            log_info "✅ Cron daemon started with direct method"
         else
             log_error "❌ Failed to start cron daemon"
         fi
