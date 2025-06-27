@@ -97,9 +97,14 @@ setup_configuration() {
         
         # First, try to use the pre-configured example file if it exists
         if [[ -f "$CONFIG_EXAMPLE_PATH" ]]; then
-            log_info "Found pre-configured example file, copying to $CONFIG_PATH"
+            log_info "Found pre-configured example file, copying to working location"
+            # Use /tmp if we can't write to the config directory
+            if ! touch "$CONFIG_PATH" 2>/dev/null; then
+                CONFIG_PATH="/tmp/config.py"
+                log_warn "Cannot write to config directory, using temporary location: $CONFIG_PATH"
+            fi
             cp "$CONFIG_EXAMPLE_PATH" "$CONFIG_PATH"
-            log_info "✅ Configuration ready from example file"
+            log_info "✅ Configuration ready from example file at $CONFIG_PATH"
         # Fallback to creating from environment variables
         elif [[ -n "${LASTFM_USERNAME:-}" && -n "${LASTFM_API_KEY:-}" && -n "${MUSIC_SERVICE:-}" ]]; then
             log_info "Creating configuration from environment variables..."
