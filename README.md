@@ -37,6 +37,7 @@ Containerized version of [DiscoveryLastFM](https://github.com/MrRobotoGit/Discov
 
 ### Option 1: Docker Compose (Recommended)
 
+#### Standard Setup
 ```bash
 # Download the simplified setup files
 curl -O https://raw.githubusercontent.com/MrRobotoGit/DiscoveryLastFM-Docker/main/docker-compose.yml
@@ -52,6 +53,21 @@ nano .env  # Edit with your Last.fm and Lidarr/Headphones credentials
 
 # Start the streamlined stack (DiscoveryLastFM + Redis)
 docker compose up -d
+```
+
+#### Synology Docker Setup
+```bash
+# For Synology Docker users - download the special Synology version
+curl -O https://raw.githubusercontent.com/MrRobotoGit/DiscoveryLastFM-Docker/main/docker-compose.synology.yml
+
+# Import docker-compose.synology.yml in Synology Docker
+# All environment variables will appear pre-filled with placeholder values
+# Edit them directly in the Synology UI:
+# - LASTFM_USERNAME: your_lastfm_username
+# - LASTFM_API_KEY: your_lastfm_api_key  
+# - LIDARR_API_KEY: your_lidarr_api_key
+# - AUTO_UPDATE_ENABLED: true (already set)
+# - UPDATE_CHECK_INTERVAL_HOURS: 24 (already set)
 ```
 
 ### Option 2: Docker Run

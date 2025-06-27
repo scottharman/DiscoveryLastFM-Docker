@@ -1,0 +1,101 @@
+# ==============================================================================
+# DiscoveryLastFM Docker Compose Configuration for Synology
+# 
+# This version has all required environment variables hardcoded with placeholder
+# values that will appear directly in Synology Docker's environment variables list.
+# Simply edit these values in the Synology UI.
+# ==============================================================================
+
+services:
+  discoverylastfm:
+    image: mrrobotogit/discoverylastfm:latest
+    container_name: discoverylastfm
+    hostname: discoverylastfm
+    ports:
+      - 8080:8080
+    # Set user for proper file permissions (especially important for macOS/Windows)
+    user: "1000:1000"
+    environment:
+      # === OPERATION MODE ===
+      - DISCOVERY_MODE=cron              # sync, cron, daemon, test
+      - CRON_SCHEDULE=0 3 * * *          # Daily at 3 AM
+      - SLEEP_HOURS=3
+      - DRY_RUN=false                    # Set to true for testing
+      - DEBUG=false                      # Enable debug logging
+      # === MUSIC SERVICE ===
+      - MUSIC_SERVICE=lidarr             # headphones or lidarr
+      # === LAST.FM CONFIGURATION (REQUIRED) ===
+      - LASTFM_USERNAME=your_lastfm_username
+      - LASTFM_API_KEY=your_lastfm_api_key
+      # === LIDARR CONFIGURATION ===
+      - LIDARR_API_KEY=your_lidarr_api_key
+      - LIDARR_ENDPOINT=http://lidarr:8686
+      - LIDARR_ROOT_FOLDER=/music
+      - LIDARR_QUALITY_PROFILE_ID=1
+      - LIDARR_METADATA_PROFILE_ID=1
+      - LIDARR_MONITOR_MODE=all
+      - LIDARR_SEARCH_ON_ADD=true
+      # === HEADPHONES CONFIGURATION (Alternative) ===
+      - HP_API_KEY=your_headphones_api_key
+      - HP_ENDPOINT=http://headphones:8181
+      # === DISCOVERY PARAMETERS ===
+      - RECENT_MONTHS=3
+      - MIN_PLAYS=20
+      - SIMILAR_MATCH_MIN=0.46
+      - MAX_SIMILAR_PER_ART=20
+      - MAX_POP_ALBUMS=5
+      - CACHE_TTL_HOURS=24
+      # === API RATE LIMITING ===
+      - REQUEST_LIMIT=0.2
+      - MBZ_DELAY=1.1
+      # === CONTAINER PATHS ===
+      - CONFIG_PATH=/app/config/config.py
+      - LOG_PATH=/app/logs
+      - CACHE_PATH=/app/cache
+      # === AUTO-UPDATE SYSTEM (v2.1.0+) REQUIRED ===
+      - AUTO_UPDATE_ENABLED=true
+      - UPDATE_CHECK_INTERVAL_HOURS=24
+      - BACKUP_RETENTION_DAYS=7
+      - ALLOW_PRERELEASE_UPDATES=false
+      - GITHUB_TOKEN=
+      # === VOLUME PERMISSIONS ===
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - config:/app/config
+      - logs:/app/logs
+      - cache:/app/cache
+    # Health check
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/health-check", "quick"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    hostname: redis
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  # DiscoveryLastFM volumes
+  config:
+  logs:
+  cache:
+  # Redis volume
+  redis:
