@@ -46,6 +46,10 @@ curl -O https://raw.githubusercontent.com/MrRobotoGit/DiscoveryLastFM-Docker/mai
 cp .env.example .env
 nano .env  # Edit with your Last.fm and Lidarr/Headphones credentials
 
+# ⚠️ IMPORTANT: Set these required variables in .env:
+# AUTO_UPDATE_ENABLED=true
+# UPDATE_CHECK_INTERVAL_HOURS=24
+
 # Start the streamlined stack (DiscoveryLastFM + Redis)
 docker compose up -d
 ```
@@ -61,6 +65,8 @@ docker run -d \
   -e MUSIC_SERVICE=lidarr \
   -e LIDARR_API_KEY=your_lidarr_key \
   -e LIDARR_ENDPOINT=http://your-lidarr:8686 \
+  -e AUTO_UPDATE_ENABLED=true \
+  -e UPDATE_CHECK_INTERVAL_HOURS=24 \
   -v discoverylastfm_config:/app/config \
   -v discoverylastfm_logs:/app/logs \
   mrrobotogit/discoverylastfm:latest
@@ -75,6 +81,8 @@ docker run -d \
   -e MUSIC_SERVICE=headphones \
   -e HP_API_KEY=your_headphones_key \
   -e HP_ENDPOINT=http://your-headphones:8181 \
+  -e AUTO_UPDATE_ENABLED=true \
+  -e UPDATE_CHECK_INTERVAL_HOURS=24 \
   -v discoverylastfm_config:/app/config \
   -v discoverylastfm_logs:/app/logs \
   mrrobotogit/discoverylastfm:latest
@@ -163,15 +171,22 @@ cd DiscoveryLastFM-Docker
 | `DRY_RUN` | Test mode (no changes) | `false` | `true`, `false` |
 | `DEBUG` | Debug logging | `false` | `true`, `false` |
 
-### Auto-Update System (v2.1.0+)
+### Auto-Update System (v2.1.0+) ⚠️ **REQUIRED**
 
-| Variable | Description | Default | Options |
-|----------|-------------|---------|---------|
-| `AUTO_UPDATE_ENABLED` | Enable auto-update checking | `false` | `true`, `false` |
-| `UPDATE_CHECK_INTERVAL_HOURS` | Check interval in hours | `24` | 1-168 |
-| `BACKUP_RETENTION_DAYS` | Backup retention in days | `7` | 1-30 |
-| `ALLOW_PRERELEASE_UPDATES` | Include pre-releases | `false` | `true`, `false` |
-| `GITHUB_TOKEN` | GitHub API token | `` | Optional for higher limits |
+> **⚠️ IMPORTANT**: The following variables are **REQUIRED** for the container to start properly:
+
+| Variable | Description | Default | Required | Options |
+|----------|-------------|---------|----------|---------|
+| `AUTO_UPDATE_ENABLED` | Enable auto-update checking | `false` | **YES** | `true`, `false` |
+| `UPDATE_CHECK_INTERVAL_HOURS` | Check interval in hours | `24` | **YES** | 1-168 |
+| `BACKUP_RETENTION_DAYS` | Backup retention in days | `7` | NO | 1-30 |
+| `ALLOW_PRERELEASE_UPDATES` | Include pre-releases | `false` | NO | `true`, `false` |
+| `GITHUB_TOKEN` | GitHub API token | `` | NO | Optional for higher limits |
+
+**🚨 Container Startup Error**: If `AUTO_UPDATE_ENABLED` and `UPDATE_CHECK_INTERVAL_HOURS` are not set, the container will fail to start with:
+```
+/usr/local/bin/docker-entrypoint.sh: line 270: syntax error near unexpected token 'else'
+```
 
 ## 🎯 Operation Modes
 
