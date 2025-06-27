@@ -1,29 +1,23 @@
 # ==============================================================================
-# DiscoveryLastFM Docker Compose Configuration
+# DiscoveryLastFM Docker Compose with Entrypoint Fix
 # 
-# ⚠️ SYNOLOGY USERS: This file includes default values for all required variables.
-# When importing this docker-compose.yml in Synology Docker, you'll see all 
-# environment variables pre-filled with dummy values. Simply edit them in the 
-# Synology UI to use your real credentials.
-# 
-# Required variables (replace dummy values):
-# - LASTFM_USERNAME: Your Last.fm username
-# - LASTFM_API_KEY: Your Last.fm API key
-# - LIDARR_API_KEY: Your Lidarr API key (if using Lidarr)
-# - HP_API_KEY: Your Headphones API key (if using Headphones)
+# This version uses an entrypoint override to install bash at runtime.
+# Less efficient than rebuilding the image, but works without local builds.
 # ==============================================================================
 
 services:
   discoverylastfm:
-    build:
-      context: .
-      dockerfile: Dockerfile.fix
-    # Alternative: use pre-built image (has entrypoint bash compatibility issues)
-    # image: mrrobotogit/discoverylastfm:latest
+    image: mrrobotogit/discoverylastfm:latest
     container_name: discoverylastfm
     hostname: discoverylastfm
     ports:
       - 8080:8080
+    # Fix: Install bash at runtime and then run original entrypoint
+    entrypoint: >
+      /bin/sh -c "apt-get update && 
+                  apt-get install -y --no-install-recommends bash && 
+                  rm -rf /var/lib/apt/lists/* &&
+                  exec /usr/local/bin/docker-entrypoint.sh"
     # Set user for proper file permissions (especially important for macOS/Windows)
     user: "${PUID:-1000}:${PGID:-1000}"
     environment:
@@ -76,10 +70,6 @@ services:
       - config:/app/config
       - logs:/app/logs
       - cache:/app/cache
-      # Optional: Mount external config
-      # - ./config/config.py:/app/config/config.py:ro
-      # Optional: Mount music directory (for Lidarr compatibility)
-      # - /path/to/music:/music:ro
     # Health check
     healthcheck:
       test: ["CMD", "/usr/local/bin/health-check", "quick"]

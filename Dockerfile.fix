@@ -1,0 +1,17 @@
+# ==============================================================================
+# DiscoveryLastFM with Bash Fix
+# 
+# This image adds bash to the official mrrobotogit/discoverylastfm:latest image
+# to fix the entrypoint script compatibility issue.
+# ==============================================================================
+
+FROM mrrobotogit/discoverylastfm:latest
+
+# Install bash for entrypoint script compatibility
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends bash \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Keep original entrypoint
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

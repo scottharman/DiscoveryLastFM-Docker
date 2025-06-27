@@ -331,7 +331,28 @@ docker compose exec discoverylastfm python /app/config/config.py
 
 #### Container Startup Error: `/usr/local/bin/docker-entrypoint.sh: line 270: syntax error near unexpected token 'else'`
 
-This error occurs when the here-doc that generates config.py isn't closed correctly. **Three common causes:**
+This error occurs because the v2.1.0+ image doesn't include bash, but the entrypoint script requires it. **Two solutions:**
+
+**Solution 1: Build with Bash Fix (Recommended)**
+```bash
+# Uses the included Dockerfile.fix to add bash to the image
+docker compose up -d --build
+```
+
+**Solution 2: Use Entrypoint Fix Compose File**
+```bash
+# Uses runtime bash installation (slower but no build required)
+docker compose -f docker-compose.entrypoint-fix.yml up -d
+```
+
+**Solution 3: Manual Build**
+```bash
+# Build custom image with bash
+docker build -f Dockerfile.fix -t discoverylastfm-bash .
+# Then update docker-compose.yml to use: image: discoverylastfm-bash
+```
+
+**Alternative Causes (if still failing after bash fix):**
 
 **1. Windows line endings (CRLF) in .env file**
 ```bash
@@ -357,22 +378,6 @@ GITHUB_TOKEN=ghp_AAA"BBB
 
 # ✅ Correct
 GITHUB_TOKEN="ghp_AAA\"BBB"
-```
-
-**Quick Fix Steps:**
-```bash
-# 1. Check .env syntax
-grep -n '=' .env | grep -vE '^[0-9]+:[A-Z0-9_]+=.+$'
-# (should print only comments, no variable lines)
-
-# 2. Rebuild container
-docker compose down
-docker compose pull
-docker compose up -d
-
-# 3. Test entrypoint script
-docker compose exec discoverylastfm bash -c \
-  'bash -n /usr/local/bin/docker-entrypoint.sh && echo "entrypoint OK"'
 ```
 
 #### Container Won't Start (General)
