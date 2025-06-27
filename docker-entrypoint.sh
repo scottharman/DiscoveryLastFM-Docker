@@ -215,10 +215,8 @@ EOF
             CONFIG_PATH="/tmp/config.py"
             log_warn "Using final fallback location: $CONFIG_PATH"
             # Create a simplified fallback configuration with proper variable expansion
-            cat > "$CONFIG_PATH" 2>/dev/null <<- FALLBACK_EOF || {
-                log_error "Final fallback configuration write failed"
-                return 0  # Don't fail the container, continue anyway
-            }
+            {
+                cat > "$CONFIG_PATH" 2>/dev/null <<- FALLBACK_EOF
 # DiscoveryLastFM Configuration - Generated from Environment Variables (Fallback)
 # Generated at: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
 
@@ -266,7 +264,10 @@ GITHUB_TOKEN = "${GITHUB_TOKEN:-}"
 GITHUB_REPO_OWNER = "MrRobotoGit"
 GITHUB_REPO_NAME = "DiscoveryLastFM"
 FALLBACK_EOF
-            log_info "Configuration created using final fallback at $CONFIG_PATH"
+            } && log_info "Configuration created using final fallback at $CONFIG_PATH" || {
+                log_error "Final fallback configuration write failed"
+                return 0  # Don't fail the container, continue anyway
+            }
         else
             log_error "Final fallback also failed. Container may not function properly."
             # Don't return 1 here - let it continue and hope for the best
