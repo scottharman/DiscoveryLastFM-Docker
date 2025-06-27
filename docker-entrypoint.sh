@@ -348,9 +348,22 @@ setup_cron() {
     
     # Start cron daemon
     log_info "Starting cron daemon..."
-    # Ensure run directory exists and start cron service
-    mkdir -p /var/run
-    service cron start
+    # Ensure run directory exists with proper permissions
+    mkdir -p /var/run /var/log
+    chmod 755 /var/run /var/log
+    
+    # Start cron daemon directly in background
+    crond -f -d 8 &
+    
+    # Give cron a moment to start
+    sleep 2
+    
+    # Verify cron is running
+    if pgrep crond > /dev/null; then
+        log_info "✅ Cron daemon started successfully"
+    else
+        log_warn "⚠️ Cron daemon may not have started properly"
+    fi
 }
 
 # ==============================================================================
