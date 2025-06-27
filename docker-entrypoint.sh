@@ -215,7 +215,7 @@ EOF
             CONFIG_PATH="/tmp/config.py"
             log_warn "Using final fallback location: $CONFIG_PATH"
             # Create a simplified fallback configuration with proper variable expansion
-            cat > "$CONFIG_PATH" 2>/dev/null << FALLBACK_EOF || {
+            cat > "$CONFIG_PATH" 2>/dev/null <<- FALLBACK_EOF || {
                 log_error "Final fallback configuration write failed"
                 return 0  # Don't fail the container, continue anyway
             }
