@@ -214,13 +214,26 @@ EOF
         if [[ "$CONFIG_PATH" != "/tmp/config.py" ]]; then
             CONFIG_PATH="/tmp/config.py"
             log_warn "Using final fallback location: $CONFIG_PATH"
-            if ! cat > "$CONFIG_PATH" 2>/dev/null << 'FALLBACK_EOF'
+            # Create a simplified fallback configuration with proper variable expansion
+            cat > "$CONFIG_PATH" 2>/dev/null << FALLBACK_EOF || {
+                log_error "Final fallback configuration write failed"
+                return 0  # Don't fail the container, continue anyway
+            }
 # DiscoveryLastFM Configuration - Generated from Environment Variables (Fallback)
+# Generated at: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+
+# === MUSIC SERVICE SELECTION ===
 MUSIC_SERVICE = "${MUSIC_SERVICE:-headphones}"
+
+# === LAST.FM CONFIGURATION ===
 LASTFM_USERNAME = "${LASTFM_USERNAME}"
 LASTFM_API_KEY = "${LASTFM_API_KEY}"
+
+# === HEADPHONES CONFIGURATION ===
 HP_API_KEY = "${HP_API_KEY:-}"
 HP_ENDPOINT = "${HP_ENDPOINT:-http://headphones:8181}"
+
+# === LIDARR CONFIGURATION ===
 LIDARR_API_KEY = "${LIDARR_API_KEY:-}"
 LIDARR_ENDPOINT = "${LIDARR_ENDPOINT:-http://lidarr:8686}"
 LIDARR_ROOT_FOLDER = "${LIDARR_ROOT_FOLDER:-/music}"
@@ -228,15 +241,23 @@ LIDARR_QUALITY_PROFILE_ID = ${LIDARR_QUALITY_PROFILE_ID:-1}
 LIDARR_METADATA_PROFILE_ID = ${LIDARR_METADATA_PROFILE_ID:-1}
 LIDARR_MONITOR_MODE = "${LIDARR_MONITOR_MODE:-all}"
 LIDARR_SEARCH_ON_ADD = ${LIDARR_SEARCH_ON_ADD:-True}
+
+# === DISCOVERY PARAMETERS ===
 RECENT_MONTHS = ${RECENT_MONTHS:-3}
 MIN_PLAYS = ${MIN_PLAYS:-20}
 SIMILAR_MATCH_MIN = ${SIMILAR_MATCH_MIN:-0.46}
 MAX_SIMILAR_PER_ART = ${MAX_SIMILAR_PER_ART:-20}
 MAX_POP_ALBUMS = ${MAX_POP_ALBUMS:-5}
 CACHE_TTL_HOURS = ${CACHE_TTL_HOURS:-24}
+
+# === API RATE LIMITING ===
 REQUEST_LIMIT = ${REQUEST_LIMIT:-0.2}
 MBZ_DELAY = ${MBZ_DELAY:-1.1}
+
+# === DEBUGGING ===
 DEBUG_PRINT = ${DEBUG_PRINT:-False}
+
+# === AUTO-UPDATE SYSTEM (v2.1.0+) ===
 AUTO_UPDATE_ENABLED = ${AUTO_UPDATE_ENABLED:-False}
 UPDATE_CHECK_INTERVAL_HOURS = ${UPDATE_CHECK_INTERVAL_HOURS:-24}
 BACKUP_RETENTION_DAYS = ${BACKUP_RETENTION_DAYS:-7}
@@ -245,12 +266,7 @@ GITHUB_TOKEN = "${GITHUB_TOKEN:-}"
 GITHUB_REPO_OWNER = "MrRobotoGit"
 GITHUB_REPO_NAME = "DiscoveryLastFM"
 FALLBACK_EOF
-            then
-                log_info "Configuration created using final fallback at $CONFIG_PATH"
-            else
-                log_error "All configuration write attempts failed. Container may not function properly."
-                # Don't return 1 here - let it continue and hope for the best
-            fi
+            log_info "Configuration created using final fallback at $CONFIG_PATH"
         else
             log_error "Final fallback also failed. Container may not function properly."
             # Don't return 1 here - let it continue and hope for the best
