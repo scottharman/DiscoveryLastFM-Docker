@@ -17,7 +17,20 @@ NC='\033[0m' # No Color
 # Script configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-SOURCE_DIR="${PROJECT_DIR}/../DiscoveryLastFM"
+
+# Try to find the source directory in common locations
+SOURCE_DIR=""
+for potential_dir in "${PROJECT_DIR}/../DiscoveryLastFM" "${PROJECT_DIR}/../DiscoveryLastFM-main" "/home/pi/DiscoveryLastFM" "${HOME}/DiscoveryLastFM"; do
+    if [[ -d "$potential_dir" && -f "$potential_dir/DiscoveryLastFM.py" ]]; then
+        SOURCE_DIR="$potential_dir"
+        break
+    fi
+done
+
+# If not found, use the default expected location
+if [[ -z "$SOURCE_DIR" ]]; then
+    SOURCE_DIR="${PROJECT_DIR}/../DiscoveryLastFM"
+fi
 
 # Default settings
 DEFAULT_MODE="interactive"
@@ -196,23 +209,20 @@ copy_source_files() {
         log_warn "Source directory not found: $SOURCE_DIR"
         log_warn "Creating placeholder files for build..."
         
-        mkdir -p "$PROJECT_DIR/build-context"
-        echo "# Placeholder DiscoveryLastFM.py" > "$PROJECT_DIR/build-context/DiscoveryLastFM.py"
-        mkdir -p "$PROJECT_DIR/build-context/services" "$PROJECT_DIR/build-context/utils"
-        echo "# Placeholder" > "$PROJECT_DIR/build-context/services/__init__.py"
-        echo "# Placeholder" > "$PROJECT_DIR/build-context/utils/__init__.py"
+        # Create placeholder files directly in project root for Docker build
+        echo "# Placeholder DiscoveryLastFM.py" > "$PROJECT_DIR/DiscoveryLastFM.py"
+        mkdir -p "$PROJECT_DIR/services" "$PROJECT_DIR/utils"
+        echo "# Placeholder" > "$PROJECT_DIR/services/__init__.py"
+        echo "# Placeholder" > "$PROJECT_DIR/utils/__init__.py"
         
         return 0
     fi
     
     log_info "Copying source files from $SOURCE_DIR"
     
-    # Create build context
-    mkdir -p "$PROJECT_DIR/build-context"
-    
-    # Copy main script
+    # Copy main script directly to project root
     if [[ -f "$SOURCE_DIR/DiscoveryLastFM.py" ]]; then
-        cp "$SOURCE_DIR/DiscoveryLastFM.py" "$PROJECT_DIR/build-context/"
+        cp "$SOURCE_DIR/DiscoveryLastFM.py" "$PROJECT_DIR/"
         log_info "✅ Copied DiscoveryLastFM.py"
     else
         log_error "Main script not found: $SOURCE_DIR/DiscoveryLastFM.py"
@@ -221,22 +231,22 @@ copy_source_files() {
     
     # Copy services directory
     if [[ -d "$SOURCE_DIR/services" ]]; then
-        cp -r "$SOURCE_DIR/services" "$PROJECT_DIR/build-context/"
+        cp -r "$SOURCE_DIR/services" "$PROJECT_DIR/"
         log_info "✅ Copied services directory"
     else
         log_warn "Services directory not found, creating empty one"
-        mkdir -p "$PROJECT_DIR/build-context/services"
-        echo "# Placeholder services module" > "$PROJECT_DIR/build-context/services/__init__.py"
+        mkdir -p "$PROJECT_DIR/services"
+        echo "# Placeholder services module" > "$PROJECT_DIR/services/__init__.py"
     fi
     
     # Copy utils directory
     if [[ -d "$SOURCE_DIR/utils" ]]; then
-        cp -r "$SOURCE_DIR/utils" "$PROJECT_DIR/build-context/"
+        cp -r "$SOURCE_DIR/utils" "$PROJECT_DIR/"
         log_info "✅ Copied utils directory"
     else
         log_warn "Utils directory not found, creating empty one"
-        mkdir -p "$PROJECT_DIR/build-context/utils"
-        echo "# Placeholder utils module" > "$PROJECT_DIR/build-context/utils/__init__.py"
+        mkdir -p "$PROJECT_DIR/utils"
+        echo "# Placeholder utils module" > "$PROJECT_DIR/utils/__init__.py"
     fi
 }
 
@@ -331,6 +341,18 @@ interactive_config() {
                 if [[ -f "$env_file" ]]; then
                     awk -v key="$hp_key" '
                         /^HP_API_KEY=/ { print "HP_API_KEY=" key; next }
+                        { print }
+                    ' "$env_file" > "$env_file.tmp" && mv "$env_file.tmp" "$env_file"
+                fi
+            fi
+            
+            read -r -p "Enter your Headphones server URL [http://headphones:8181]: " hp_endpoint
+            hp_endpoint="${hp_endpoint:-http://headphones:8181}"
+            if [[ -n "$hp_endpoint" ]]; then
+                local env_file="$PROJECT_DIR/.env"
+                if [[ -f "$env_file" ]]; then
+                    awk -v endpoint="$hp_endpoint" '
+                        /^HP_ENDPOINT=/ { print "HP_ENDPOINT=" endpoint; next }
                         { print }
                     ' "$env_file" > "$env_file.tmp" && mv "$env_file.tmp" "$env_file"
                 fi
