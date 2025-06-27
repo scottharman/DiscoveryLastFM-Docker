@@ -1,3 +1,18 @@
+# ==============================================================================
+# DiscoveryLastFM Docker Compose Configuration
+# 
+# ⚠️ SYNOLOGY USERS: This file includes default values for all required variables.
+# When importing this docker-compose.yml in Synology Docker, you'll see all 
+# environment variables pre-filled with dummy values. Simply edit them in the 
+# Synology UI to use your real credentials.
+# 
+# Required variables (replace dummy values):
+# - LASTFM_USERNAME: Your Last.fm username
+# - LASTFM_API_KEY: Your Last.fm API key
+# - LIDARR_API_KEY: Your Lidarr API key (if using Lidarr)
+# - HP_API_KEY: Your Headphones API key (if using Headphones)
+# ==============================================================================
+
 services:
   discoverylastfm:
     # build:
@@ -21,11 +36,11 @@ services:
       - DEBUG=false                      # Enable debug logging
       # === MUSIC SERVICE ===
       - MUSIC_SERVICE=lidarr             # headphones or lidarr
-      # === LAST.FM CONFIGURATION ===
-      - LASTFM_USERNAME=${LASTFM_USERNAME}
-      - LASTFM_API_KEY=${LASTFM_API_KEY}
+      # === LAST.FM CONFIGURATION (REQUIRED) ===
+      - LASTFM_USERNAME=${LASTFM_USERNAME:-dummy_username}
+      - LASTFM_API_KEY=${LASTFM_API_KEY:-dummy_api_key_replace_with_real_one}
       # === LIDARR CONFIGURATION ===
-      - LIDARR_API_KEY=${LIDARR_API_KEY}
+      - LIDARR_API_KEY=${LIDARR_API_KEY:-dummy_lidarr_api_key_replace_with_real_one}
       - LIDARR_ENDPOINT=http://lidarr:8686
       - LIDARR_ROOT_FOLDER=/music
       - LIDARR_QUALITY_PROFILE_ID=1
@@ -33,9 +48,8 @@ services:
       - LIDARR_MONITOR_MODE=all
       - LIDARR_SEARCH_ON_ADD=true
       # === HEADPHONES CONFIGURATION (Alternative) ===
-      # Uncomment if using Headphones instead of Lidarr
-      # - HP_API_KEY=${HP_API_KEY}
-      # - HP_ENDPOINT=http://headphones:8181
+      - HP_API_KEY=${HP_API_KEY:-dummy_headphones_api_key_replace_with_real_one}
+      - HP_ENDPOINT=http://headphones:8181
       # === DISCOVERY PARAMETERS ===
       - RECENT_MONTHS=3
       - MIN_PLAYS=20
@@ -50,8 +64,8 @@ services:
       - CONFIG_PATH=/app/config/config.py
       - LOG_PATH=/app/logs
       - CACHE_PATH=/app/cache
-      # === AUTO-UPDATE SYSTEM (v2.1.0+) ===
-      - AUTO_UPDATE_ENABLED=${AUTO_UPDATE_ENABLED:-false}
+      # === AUTO-UPDATE SYSTEM (v2.1.0+) REQUIRED ===
+      - AUTO_UPDATE_ENABLED=${AUTO_UPDATE_ENABLED:-true}
       - UPDATE_CHECK_INTERVAL_HOURS=${UPDATE_CHECK_INTERVAL_HOURS:-24}
       - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-7}
       - ALLOW_PRERELEASE_UPDATES=${ALLOW_PRERELEASE_UPDATES:-false}
