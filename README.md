@@ -95,6 +95,7 @@ docker run -d \
   -e UPDATE_CHECK_INTERVAL_HOURS=24 \
   -v discoverylastfm_config:/app/config \
   -v discoverylastfm_logs:/app/logs \
+  --entrypoint '/bin/sh -c "apt-get update && apt-get install -y --no-install-recommends bash && rm -rf /var/lib/apt/lists/* && exec /usr/local/bin/docker-entrypoint.sh"' \
   mrrobotogit/discoverylastfm:latest
 ```
 
@@ -111,6 +112,7 @@ docker run -d \
   -e UPDATE_CHECK_INTERVAL_HOURS=24 \
   -v discoverylastfm_config:/app/config \
   -v discoverylastfm_logs:/app/logs \
+  --entrypoint '/bin/sh -c "apt-get update && apt-get install -y --no-install-recommends bash && rm -rf /var/lib/apt/lists/* && exec /usr/local/bin/docker-entrypoint.sh"' \
   mrrobotogit/discoverylastfm:latest
 ```
 
@@ -221,7 +223,10 @@ cd DiscoveryLastFM-Docker
 docker run --rm \
   -e DISCOVERY_MODE=sync \
   -e LASTFM_USERNAME=your_username \
-  # ... other config
+  -e LASTFM_API_KEY=your_api_key \
+  -e AUTO_UPDATE_ENABLED=true \
+  -e UPDATE_CHECK_INTERVAL_HOURS=24 \
+  --entrypoint '/bin/sh -c "apt-get update && apt-get install -y --no-install-recommends bash && rm -rf /var/lib/apt/lists/* && exec /usr/local/bin/docker-entrypoint.sh"' \
   mrrobotogit/discoverylastfm:latest
 ```
 
@@ -248,7 +253,11 @@ services:
 ```bash
 docker run --rm \
   -e DISCOVERY_MODE=test \
-  # ... config
+  -e LASTFM_USERNAME=your_username \
+  -e LASTFM_API_KEY=your_api_key \
+  -e AUTO_UPDATE_ENABLED=true \
+  -e UPDATE_CHECK_INTERVAL_HOURS=24 \
+  --entrypoint '/bin/sh -c "apt-get update && apt-get install -y --no-install-recommends bash && rm -rf /var/lib/apt/lists/* && exec /usr/local/bin/docker-entrypoint.sh"' \
   mrrobotogit/discoverylastfm:latest
 ```
 

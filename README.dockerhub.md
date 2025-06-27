@@ -23,7 +23,7 @@ nano .env  # Replace dummy values with your real credentials
 # AUTO_UPDATE_ENABLED=true
 # UPDATE_CHECK_INTERVAL_HOURS=24
 
-# Start the stack
+# Start the stack (first run installs bash compatibility fix)
 docker compose up -d
 ```
 
@@ -41,6 +41,7 @@ docker run -d \
   -e UPDATE_CHECK_INTERVAL_HOURS=24 \
   -v discoverylastfm_config:/app/config \
   -v discoverylastfm_logs:/app/logs \
+  --entrypoint '/bin/sh -c "apt-get update && apt-get install -y --no-install-recommends bash && rm -rf /var/lib/apt/lists/* && exec /usr/local/bin/docker-entrypoint.sh"' \
   mrrobotogit/discoverylastfm:latest
 
 # With Headphones  
@@ -55,6 +56,7 @@ docker run -d \
   -e UPDATE_CHECK_INTERVAL_HOURS=24 \
   -v discoverylastfm_config:/app/config \
   -v discoverylastfm_logs:/app/logs \
+  --entrypoint '/bin/sh -c "apt-get update && apt-get install -y --no-install-recommends bash && rm -rf /var/lib/apt/lists/* && exec /usr/local/bin/docker-entrypoint.sh"' \
   mrrobotogit/discoverylastfm:latest
 ```
 
@@ -163,7 +165,18 @@ docker compose exec discoverylastfm python DiscoveryLastFM.py --cleanup
 
 ## 🚨 Common Issues
 
-### Container Won't Start
+### Container Won't Start (bash compatibility error)
+If you see `/usr/local/bin/docker-entrypoint.sh: line 270: syntax error near unexpected token 'else'`:
+
+```bash
+# The error occurs because v2.1.0+ doesn't include bash
+# Solution: Use the updated docker-compose.yml or add entrypoint override
+
+# For docker run, add this entrypoint:
+--entrypoint '/bin/sh -c "apt-get update && apt-get install -y --no-install-recommends bash && rm -rf /var/lib/apt/lists/* && exec /usr/local/bin/docker-entrypoint.sh"'
+```
+
+### Container Won't Start (General)
 ```bash
 # Check logs
 docker logs discoverylastfm
