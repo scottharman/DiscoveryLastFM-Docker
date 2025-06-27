@@ -329,7 +329,53 @@ docker compose exec discoverylastfm python /app/config/config.py
 
 ### Common Issues
 
-#### Container Won't Start
+#### Container Startup Error: `/usr/local/bin/docker-entrypoint.sh: line 270: syntax error near unexpected token 'else'`
+
+This error occurs when the here-doc that generates config.py isn't closed correctly. **Three common causes:**
+
+**1. Windows line endings (CRLF) in .env file**
+```bash
+# Check line endings
+file .env
+# If shows "CRLF line terminators", fix with:
+dos2unix .env
+```
+
+**2. Spaces around = in environment variables**
+```bash
+# ❌ Wrong (space before/after =)
+AUTO_UPDATE_ENABLED = true
+
+# ✅ Correct 
+AUTO_UPDATE_ENABLED=true
+```
+
+**3. Values containing quotes, backslashes, or "EOF"**
+```bash
+# ❌ Problematic
+GITHUB_TOKEN=ghp_AAA"BBB
+
+# ✅ Correct
+GITHUB_TOKEN="ghp_AAA\"BBB"
+```
+
+**Quick Fix Steps:**
+```bash
+# 1. Check .env syntax
+grep -n '=' .env | grep -vE '^[0-9]+:[A-Z0-9_]+=.+$'
+# (should print only comments, no variable lines)
+
+# 2. Rebuild container
+docker compose down
+docker compose pull
+docker compose up -d
+
+# 3. Test entrypoint script
+docker compose exec discoverylastfm bash -c \
+  'bash -n /usr/local/bin/docker-entrypoint.sh && echo "entrypoint OK"'
+```
+
+#### Container Won't Start (General)
 ```bash
 # Check logs
 docker compose logs discoverylastfm
