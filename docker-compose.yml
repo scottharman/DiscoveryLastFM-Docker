@@ -15,11 +15,13 @@
 
 services:
   discoverylastfm:
-    build:
-      context: .
-      dockerfile: Dockerfile.fix
-    # Alternative: use pre-built image (has entrypoint bash compatibility issues)
-    # image: mrrobotogit/discoverylastfm:latest
+    image: mrrobotogit/discoverylastfm:latest
+    # Fix for bash compatibility in v2.1.0+ (install bash at runtime)
+    entrypoint: >
+      /bin/sh -c "apt-get update && 
+                  apt-get install -y --no-install-recommends bash && 
+                  rm -rf /var/lib/apt/lists/* &&
+                  exec /usr/local/bin/docker-entrypoint.sh"
     container_name: discoverylastfm
     hostname: discoverylastfm
     ports:

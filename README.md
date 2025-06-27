@@ -52,7 +52,7 @@ nano .env  # Edit with your Last.fm and Lidarr/Headphones credentials
 # UPDATE_CHECK_INTERVAL_HOURS=24
 
 # Start the streamlined stack (DiscoveryLastFM + Redis)
-# Note: First run will build the image with bash compatibility fix
+# Note: First run will install bash for compatibility (takes ~30 seconds)
 docker compose up -d
 ```
 
@@ -339,7 +339,7 @@ This error occurs because the v2.1.0+ image doesn't include bash, but the entryp
 docker compose up -d
 ```
 
-The docker-compose.yml automatically builds a fixed version with bash included.
+The docker-compose.yml automatically installs bash at runtime for compatibility.
 
 **Alternative Causes (if still failing):**
 
