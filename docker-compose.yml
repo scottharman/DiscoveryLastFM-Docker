@@ -25,6 +25,9 @@ services:
     # Set user for proper file permissions (especially important for macOS/Windows)
     # user: "${PUID:-1000}:${PGID:-1000}"  # Commented out to allow proper cron setup
     environment:
+      # === USER PERMISSIONS ===
+      - PUID=0                           # Run as root to allow cron setup
+      - PGID=0                           # Run as root to allow cron setup
       # === OPERATION MODE ===
       - DISCOVERY_MODE=cron              # sync, cron, daemon, test
       - CRON_SCHEDULE=0 3 * * *          # Daily at 3 AM
