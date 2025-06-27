@@ -86,8 +86,8 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 # Expose metrics port (optional, for future monitoring)
 EXPOSE 8080
 
-# Switch to non-root user
-USER discoverylastfm
+# Switch to non-root user (commented out to allow cron setup as root)
+# USER discoverylastfm
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1

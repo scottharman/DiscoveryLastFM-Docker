@@ -348,21 +348,31 @@ setup_cron() {
     
     # Start cron daemon
     log_info "Starting cron daemon..."
-    # Ensure run directory exists with proper permissions
-    mkdir -p /var/run /var/log
-    chmod 755 /var/run /var/log
+    log_info "🔍 Cron setup user: $(whoami) (UID: $(id -u))"
+    
+    # Ensure directories exist (skip permission changes that might fail)
+    mkdir -p /var/run /var/log /var/spool/cron/crontabs 2>/dev/null || true
     
     # Start cron daemon directly in background
     crond -f -d 8 &
+    local cron_pid=$!
     
     # Give cron a moment to start
     sleep 2
     
     # Verify cron is running
     if pgrep crond > /dev/null; then
-        log_info "✅ Cron daemon started successfully"
+        log_info "✅ Cron daemon started successfully (PID: $cron_pid)"
     else
-        log_warn "⚠️ Cron daemon may not have started properly"
+        log_warn "⚠️ Cron daemon failed to start, trying alternative approach..."
+        # Try with different options
+        crond -L /var/log/cron.log &
+        sleep 1
+        if pgrep crond > /dev/null; then
+            log_info "✅ Cron daemon started with alternative method"
+        else
+            log_error "❌ Failed to start cron daemon"
+        fi
     fi
 }
 
@@ -442,6 +452,7 @@ main() {
     log_info "Starting DiscoveryLastFM Container..."
     log_info "Mode: $DISCOVERY_MODE"
     log_info "Debug: $DEBUG"
+    log_info "🔍 Current user: $(whoami) (UID: $(id -u), GID: $(id -g))"
     
     # Setup steps
     setup_user
