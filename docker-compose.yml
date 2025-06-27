@@ -10,6 +10,8 @@ services:
     hostname: discoverylastfm
     ports:
       - 8080:8080
+    # Set user for proper file permissions (especially important for macOS/Windows)
+    user: "${PUID:-1000}:${PGID:-1000}"
     environment:
       # === OPERATION MODE ===
       - DISCOVERY_MODE=cron              # sync, cron, daemon, test
@@ -81,7 +83,7 @@ services:
     image: redis:7-alpine
     container_name: redis
     hostname: redis
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
     volumes:
       - redis:/data
     healthcheck:

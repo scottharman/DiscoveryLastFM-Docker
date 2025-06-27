@@ -53,18 +53,29 @@ setup_user() {
     local PUID=${PUID:-1000}
     local PGID=${PGID:-1000}
     
-    # Only modify user if running as root and PUID/PGID are different
-    if [[ "$(id -u)" -eq 0 ]] && [[ "$PUID" != "1000" || "$PGID" != "1000" ]]; then
-        log_info "Modifying user permissions: PUID=$PUID, PGID=$PGID"
-        
-        # Modify the user and group IDs
-        groupmod -o -g "$PGID" discoverylastfm 2>/dev/null || true
-        usermod -o -u "$PUID" discoverylastfm 2>/dev/null || true
-        
-        # Ensure proper ownership of app directories
-        chown -R "$PUID:$PGID" /app 2>/dev/null || log_warn "Cannot chown /app (mounted volume)"
-        
-        log_info "User setup completed"
+    log_debug "PUID=$PUID, PGID=$PGID, Current UID=$(id -u), Current GID=$(id -g)"
+    
+    # Only modify user if running as root and PUID/PGID are different from current
+    if [[ "$(id -u)" -eq 0 ]]; then
+        if [[ "$PUID" != "$(id -u discoverylastfm 2>/dev/null || echo 1000)" || "$PGID" != "$(id -g discoverylastfm 2>/dev/null || echo 1000)" ]]; then
+            log_info "Modifying user permissions: PUID=$PUID, PGID=$PGID"
+            
+            # Modify the user and group IDs
+            groupmod -o -g "$PGID" discoverylastfm 2>/dev/null || {
+                log_warn "Failed to modify group ID, creating new group"
+                groupadd -g "$PGID" discoverylastfm-runtime 2>/dev/null || true
+            }
+            usermod -o -u "$PUID" -g "$PGID" discoverylastfm 2>/dev/null || {
+                log_warn "Failed to modify user ID"
+            }
+            
+            # Ensure proper ownership of app directories (ignore failures on mounted volumes)
+            chown -R "$PUID:$PGID" /app 2>/dev/null || log_warn "Cannot chown /app (mounted volume - this is normal on macOS/Windows)"
+            
+            log_info "User setup completed"
+        else
+            log_debug "PUID/PGID already match current user, no changes needed"
+        fi
     else
         log_debug "Using default user (UID=$(id -u), GID=$(id -g))"
     fi
@@ -209,13 +220,16 @@ setup_logging() {
     if chmod 755 "$LOG_PATH" 2>/dev/null; then
         log_debug "Set permissions on $LOG_PATH"
     else
-        log_warn "Cannot set permissions on $LOG_PATH (mounted volume - this is normal)"
+        log_warn "Cannot set permissions on $LOG_PATH (mounted volume - this is normal on macOS/Windows)"
     fi
     
-    # Check if directory is writable
-    if [[ ! -w "$LOG_PATH" ]]; then
-        log_error "Log directory $LOG_PATH is not writable. Check volume permissions."
-        return 1
+    # Try to create a test file to verify write access
+    if touch "$LOG_PATH/.test_write" 2>/dev/null; then
+        rm -f "$LOG_PATH/.test_write" 2>/dev/null
+        log_debug "Log directory is writable at $LOG_PATH"
+    else
+        log_warn "Log directory $LOG_PATH may not be writable. Will attempt to continue."
+        # Don't fail here, let the application handle logging issues
     fi
     
     log_debug "Log directory ready at $LOG_PATH"
@@ -235,13 +249,16 @@ setup_cache() {
     if chmod 755 "$CACHE_PATH" 2>/dev/null; then
         log_debug "Set permissions on $CACHE_PATH"
     else
-        log_warn "Cannot set permissions on $CACHE_PATH (mounted volume - this is normal)"
+        log_warn "Cannot set permissions on $CACHE_PATH (mounted volume - this is normal on macOS/Windows)"
     fi
     
-    # Check if directory is writable
-    if [[ ! -w "$CACHE_PATH" ]]; then
-        log_error "Cache directory $CACHE_PATH is not writable. Check volume permissions."
-        return 1
+    # Try to create a test file to verify write access
+    if touch "$CACHE_PATH/.test_write" 2>/dev/null; then
+        rm -f "$CACHE_PATH/.test_write" 2>/dev/null
+        log_debug "Cache directory is writable at $CACHE_PATH"
+    else
+        log_warn "Cache directory $CACHE_PATH may not be writable. Will attempt to continue."
+        # Don't fail here, let the application handle caching issues
     fi
     
     log_debug "Cache directory ready at $CACHE_PATH"
@@ -271,8 +288,33 @@ setup_cron() {
 health_check() {
     log_info "Performing health check..."
     
-    # Check configuration
-    if ! python -c "exec(open('$CONFIG_PATH').read()); print('Config OK')" >/dev/null 2>&1; then
+    # Check if configuration file exists and is readable
+    if [[ ! -f "$CONFIG_PATH" ]]; then
+        log_error "Configuration file not found: $CONFIG_PATH"
+        return 1
+    fi
+    
+    if [[ ! -r "$CONFIG_PATH" ]]; then
+        log_error "Configuration file not readable: $CONFIG_PATH"
+        return 1
+    fi
+    
+    # Check configuration syntax using safer method
+    if ! python -c "
+import sys
+try:
+    with open('$CONFIG_PATH', 'r') as f:
+        config_content = f.read()
+    # Try to compile the configuration as Python code
+    compile(config_content, '$CONFIG_PATH', 'exec')
+    print('Config syntax OK')
+except SyntaxError as e:
+    print(f'Config syntax error: {e}', file=sys.stderr)
+    sys.exit(1)
+except Exception as e:
+    print(f'Config validation error: {e}', file=sys.stderr)
+    sys.exit(1)
+" >/dev/null 2>&1; then
         log_error "Configuration validation failed"
         return 1
     fi

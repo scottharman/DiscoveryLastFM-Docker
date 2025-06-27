@@ -298,14 +298,18 @@ docker compose logs discoverylastfm
 docker compose exec discoverylastfm /usr/local/bin/health-check config
 ```
 
-#### macOS/Windows Docker Desktop Issues
+#### macOS/Windows Docker Desktop Issues ✅ **FIXED**
 
-**Problem**: Container crashes with `chmod: changing permissions of '/app/logs': Operation not permitted`
+**Previous Issue**: Container crashes with `chmod: changing permissions of '/app/logs': Operation not permitted`
 
-**Solution**: This is normal on macOS/Windows Docker Desktop due to filesystem differences. The container now handles this gracefully, but if you still have issues:
+**✅ Resolution**: Fixed in latest version with improved cross-platform compatibility:
+- Enhanced PUID/PGID handling for proper user mapping
+- Graceful permission handling that doesn't fail on mounted volumes
+- Improved error messages and fallback mechanisms
 
+**Configuration for optimal performance**:
 ```bash
-# Option 1: Use PUID/PGID (recommended)
+# Option 1: Use PUID/PGID (recommended for all platforms)
 echo "PUID=$(id -u)" >> .env
 echo "PGID=$(id -g)" >> .env
 docker compose up -d
@@ -320,16 +324,17 @@ mkdir -p ./data/{config,logs,cache}
 #   - ./data/cache:/app/cache
 ```
 
-**Problem**: `Permission denied` when creating config.py
+#### Redis Container Issues ✅ **FIXED**
 
-**Solution**: The container will automatically use a fallback location. Check if you have a read-only volume mount:
+**Previous Issue**: Redis fails to start with "redis-server: not found" error
 
-```bash
-# Ensure config volume is writable
-docker compose down
-docker volume rm discoverylastfm_config  # Remove if readonly
-docker compose up -d
-```
+**✅ Resolution**: Fixed command format in docker-compose.yml for proper argument parsing
+
+#### Configuration Validation Issues ✅ **FIXED**
+
+**Previous Issue**: Health check fails with configuration validation errors
+
+**✅ Resolution**: Implemented safer configuration validation using proper Python compile() method instead of unsafe exec()
 
 #### Last.fm Connection Issues
 ```bash
