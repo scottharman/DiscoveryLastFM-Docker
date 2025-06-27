@@ -52,6 +52,7 @@ nano .env  # Edit with your Last.fm and Lidarr/Headphones credentials
 # UPDATE_CHECK_INTERVAL_HOURS=24
 
 # Start the streamlined stack (DiscoveryLastFM + Redis)
+# Note: First run will build the image with bash compatibility fix
 docker compose up -d
 ```
 
@@ -331,28 +332,16 @@ docker compose exec discoverylastfm python /app/config/config.py
 
 #### Container Startup Error: `/usr/local/bin/docker-entrypoint.sh: line 270: syntax error near unexpected token 'else'`
 
-This error occurs because the v2.1.0+ image doesn't include bash, but the entrypoint script requires it. **Two solutions:**
+This error occurs because the v2.1.0+ image doesn't include bash, but the entrypoint script requires it. 
 
-**Solution 1: Build with Bash Fix (Recommended)**
+**Solution:**
 ```bash
-# Uses the included Dockerfile.fix to add bash to the image
-docker compose up -d --build
+docker compose up -d
 ```
 
-**Solution 2: Use Entrypoint Fix Compose File**
-```bash
-# Uses runtime bash installation (slower but no build required)
-docker compose -f docker-compose.entrypoint-fix.yml up -d
-```
+The docker-compose.yml automatically builds a fixed version with bash included.
 
-**Solution 3: Manual Build**
-```bash
-# Build custom image with bash
-docker build -f Dockerfile.fix -t discoverylastfm-bash .
-# Then update docker-compose.yml to use: image: discoverylastfm-bash
-```
-
-**Alternative Causes (if still failing after bash fix):**
+**Alternative Causes (if still failing):**
 
 **1. Windows line endings (CRLF) in .env file**
 ```bash

@@ -8,7 +8,9 @@
 
 services:
   discoverylastfm:
-    image: mrrobotogit/discoverylastfm:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.fix
     container_name: discoverylastfm
     hostname: discoverylastfm
     ports:
