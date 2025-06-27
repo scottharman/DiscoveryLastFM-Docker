@@ -84,6 +84,10 @@ curl -O https://raw.githubusercontent.com/MrRobotoGit/DiscoveryLastFM-Docker/mai
 
 #### With Lidarr (Recommended)
 ```bash
+# First, build the image with bash included
+docker build -t discoverylastfm-local .
+
+# Then run the container
 docker run -d \
   --name discoverylastfm \
   -e LASTFM_USERNAME=your_username \
@@ -95,12 +99,15 @@ docker run -d \
   -e UPDATE_CHECK_INTERVAL_HOURS=24 \
   -v discoverylastfm_config:/app/config \
   -v discoverylastfm_logs:/app/logs \
-  --entrypoint '/bin/sh -c "apt-get update && apt-get install -y --no-install-recommends bash && rm -rf /var/lib/apt/lists/* && exec /usr/local/bin/docker-entrypoint.sh"' \
-  mrrobotogit/discoverylastfm:latest
+  discoverylastfm-local:latest
 ```
 
 #### With Headphones
 ```bash
+# First, build the image with bash included
+docker build -t discoverylastfm-local .
+
+# Then run the container
 docker run -d \
   --name discoverylastfm \
   -e LASTFM_USERNAME=your_username \
@@ -112,8 +119,7 @@ docker run -d \
   -e UPDATE_CHECK_INTERVAL_HOURS=24 \
   -v discoverylastfm_config:/app/config \
   -v discoverylastfm_logs:/app/logs \
-  --entrypoint '/bin/sh -c "apt-get update && apt-get install -y --no-install-recommends bash && rm -rf /var/lib/apt/lists/* && exec /usr/local/bin/docker-entrypoint.sh"' \
-  mrrobotogit/discoverylastfm:latest
+  discoverylastfm-local:latest
 ```
 
 ### Option 3: Automated Setup Script
@@ -220,14 +226,17 @@ cd DiscoveryLastFM-Docker
 
 ### Sync Mode (One-time)
 ```bash
+# Build image first
+docker build -t discoverylastfm-local .
+
+# Run in sync mode
 docker run --rm \
   -e DISCOVERY_MODE=sync \
   -e LASTFM_USERNAME=your_username \
   -e LASTFM_API_KEY=your_api_key \
   -e AUTO_UPDATE_ENABLED=true \
   -e UPDATE_CHECK_INTERVAL_HOURS=24 \
-  --entrypoint '/bin/sh -c "apt-get update && apt-get install -y --no-install-recommends bash && rm -rf /var/lib/apt/lists/* && exec /usr/local/bin/docker-entrypoint.sh"' \
-  mrrobotogit/discoverylastfm:latest
+  discoverylastfm-local:latest
 ```
 
 ### Cron Mode (Scheduled)
@@ -251,14 +260,17 @@ services:
 
 ### Test Mode (Validation)
 ```bash
+# Build image first
+docker build -t discoverylastfm-local .
+
+# Run in test mode
 docker run --rm \
   -e DISCOVERY_MODE=test \
   -e LASTFM_USERNAME=your_username \
   -e LASTFM_API_KEY=your_api_key \
   -e AUTO_UPDATE_ENABLED=true \
   -e UPDATE_CHECK_INTERVAL_HOURS=24 \
-  --entrypoint '/bin/sh -c "apt-get update && apt-get install -y --no-install-recommends bash && rm -rf /var/lib/apt/lists/* && exec /usr/local/bin/docker-entrypoint.sh"' \
-  mrrobotogit/discoverylastfm:latest
+  discoverylastfm-local:latest
 ```
 
 ### Auto-Update CLI Commands (v2.1.0+)

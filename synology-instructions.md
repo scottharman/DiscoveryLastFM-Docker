@@ -2,14 +2,23 @@
 
 Since Synology Docker doesn't automatically show environment variables from docker-compose files, you need to add them manually.
 
-## Step 1: Download the Image
+## Step 1: Build the Image
 
-In Synology Docker, go to **Registry** and search for `mrrobotogit/discoverylastfm:latest` and download it.
+1. Download the repository files to your Synology:
+   - `docker-compose.synology.yml`
+   - `Dockerfile` 
+   - `.env.example`
+   - All source files needed for build
+
+2. Open Synology Docker, go to **Image** tab
+3. Click **Add** → **Add from Folder**
+4. Select the folder containing all the files
+5. Build will create the image with bash included
 
 ## Step 2: Create Container Manually
 
 1. Go to **Image** tab
-2. Select `mrrobotogit/discoverylastfm:latest`
+2. Select the built image
 3. Click **Launch**
 4. Click **Advanced Settings**
 5. Go to **Environment** tab

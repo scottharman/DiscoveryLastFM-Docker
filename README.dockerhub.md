@@ -11,9 +11,10 @@ Streamlined Docker container for **DiscoveryLastFM v2.1.0** - automated music di
 
 ### Docker Compose (Recommended)
 ```bash
-# Download setup files
-curl -O https://raw.githubusercontent.com/MrRobotoGit/DiscoveryLastFM-Docker/main/docker-compose.yml
-curl -O https://raw.githubusercontent.com/MrRobotoGit/DiscoveryLastFM-Docker/main/.env.example
+# Download all required files
+curl -L -O https://raw.githubusercontent.com/MrRobotoGit/DiscoveryLastFM-Docker/main/docker-compose.yml
+curl -L -O https://raw.githubusercontent.com/MrRobotoGit/DiscoveryLastFM-Docker/main/.env.example
+curl -L -O https://raw.githubusercontent.com/MrRobotoGit/DiscoveryLastFM-Docker/main/Dockerfile
 
 # Configure environment (REQUIRED variables already have dummy values)
 cp .env.example .env
@@ -23,12 +24,16 @@ nano .env  # Replace dummy values with your real credentials
 # AUTO_UPDATE_ENABLED=true
 # UPDATE_CHECK_INTERVAL_HOURS=24
 
-# Start the stack (first run installs bash compatibility fix)
+# Start the stack (first run builds image with bash included)
 docker compose up -d
 ```
 
 ### Docker Run
 ```bash
+# First, download Dockerfile and build the image
+curl -L -O https://raw.githubusercontent.com/MrRobotoGit/DiscoveryLastFM-Docker/main/Dockerfile
+docker build -t discoverylastfm-local .
+
 # With Lidarr
 docker run -d \
   --name discoverylastfm \
@@ -41,8 +46,7 @@ docker run -d \
   -e UPDATE_CHECK_INTERVAL_HOURS=24 \
   -v discoverylastfm_config:/app/config \
   -v discoverylastfm_logs:/app/logs \
-  --entrypoint '/bin/sh -c "apt-get update && apt-get install -y --no-install-recommends bash && rm -rf /var/lib/apt/lists/* && exec /usr/local/bin/docker-entrypoint.sh"' \
-  mrrobotogit/discoverylastfm:latest
+  discoverylastfm-local:latest
 
 # With Headphones  
 docker run -d \
@@ -56,8 +60,7 @@ docker run -d \
   -e UPDATE_CHECK_INTERVAL_HOURS=24 \
   -v discoverylastfm_config:/app/config \
   -v discoverylastfm_logs:/app/logs \
-  --entrypoint '/bin/sh -c "apt-get update && apt-get install -y --no-install-recommends bash && rm -rf /var/lib/apt/lists/* && exec /usr/local/bin/docker-entrypoint.sh"' \
-  mrrobotogit/discoverylastfm:latest
+  discoverylastfm-local:latest
 ```
 
 ## ✨ What's Included
@@ -169,11 +172,14 @@ docker compose exec discoverylastfm python DiscoveryLastFM.py --cleanup
 If you see `/usr/local/bin/docker-entrypoint.sh: line 270: syntax error near unexpected token 'else'`:
 
 ```bash
-# The error occurs because v2.1.0+ doesn't include bash
-# Solution: Use the updated docker-compose.yml or add entrypoint override
+# The error occurs because the official v2.1.0 image doesn't include bash
+# Solution: Build the image using our Dockerfile which includes bash
 
-# For docker run, add this entrypoint:
---entrypoint '/bin/sh -c "apt-get update && apt-get install -y --no-install-recommends bash && rm -rf /var/lib/apt/lists/* && exec /usr/local/bin/docker-entrypoint.sh"'
+# Download Dockerfile and build
+curl -L -O https://raw.githubusercontent.com/MrRobotoGit/DiscoveryLastFM-Docker/main/Dockerfile
+docker build -t discoverylastfm-local .
+
+# Use discoverylastfm-local:latest instead of mrrobotogit/discoverylastfm:latest
 ```
 
 ### Container Won't Start (General)
