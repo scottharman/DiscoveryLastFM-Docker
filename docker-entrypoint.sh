@@ -157,7 +157,7 @@ LASTFM_API_KEY = "${LASTFM_API_KEY}"
 
 # === HEADPHONES CONFIGURATION ===
 $(if [[ "${MUSIC_SERVICE:-headphones}" == "headphones" ]]; then
-cat << 'HPEOF'
+HPEOF
 HP_API_KEY = "${HP_API_KEY:-}"
 HP_ENDPOINT = "${HP_ENDPOINT:-http://headphones:8181}"
 HP_MAX_RETRIES = ${HP_MAX_RETRIES:-3}
@@ -168,7 +168,7 @@ fi)
 
 # === LIDARR CONFIGURATION ===
 $(if [[ "${MUSIC_SERVICE:-}" == "lidarr" ]]; then
-cat << 'LIDARREOF'
+LIDARREOF
 LIDARR_API_KEY = "${LIDARR_API_KEY:-}"
 LIDARR_ENDPOINT = "${LIDARR_ENDPOINT:-http://lidarr:8686}"
 LIDARR_ROOT_FOLDER = "${LIDARR_ROOT_FOLDER:-/music}"
@@ -216,7 +216,7 @@ EOF
             log_warn "Using final fallback location: $CONFIG_PATH"
             # Create a simplified fallback configuration with proper variable expansion
             {
-                cat > "$CONFIG_PATH" 2>/dev/null <<- FALLBACK_EOF
+FALLBACK_EOF
 # DiscoveryLastFM Configuration - Generated from Environment Variables (Fallback)
 # Generated at: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
 
