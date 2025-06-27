@@ -56,19 +56,28 @@ docker compose up -d
 ```
 
 #### Synology Docker Setup
-```bash
-# For Synology Docker users - download the special Synology version
-curl -O https://raw.githubusercontent.com/MrRobotoGit/DiscoveryLastFM-Docker/main/docker-compose.synology.yml
 
-# Import docker-compose.synology.yml in Synology Docker
-# All environment variables will appear pre-filled with placeholder values
-# Edit them directly in the Synology UI:
-# - LASTFM_USERNAME: your_lastfm_username
-# - LASTFM_API_KEY: your_lastfm_api_key  
-# - LIDARR_API_KEY: your_lidarr_api_key
-# - AUTO_UPDATE_ENABLED: true (already set)
-# - UPDATE_CHECK_INTERVAL_HOURS: 24 (already set)
+**Option A: Manual Setup (Recommended)**
+1. Download the image `mrrobotogit/discoverylastfm:latest` from Registry
+2. Follow the detailed [Synology Setup Instructions](synology-instructions.md)
+3. Manually add the required environment variables
+
+**Option B: Import Template**
+```bash
+# Download the Synology container template
+curl -O https://raw.githubusercontent.com/MrRobotoGit/DiscoveryLastFM-Docker/main/synology-template.json
+
+# Import in Synology Docker:
+# 1. Go to Container tab
+# 2. Click Settings → Import 
+# 3. Upload synology-template.json
+# 4. Edit environment variables with your credentials
 ```
+
+**Required Variables to Set:**
+- `LASTFM_USERNAME`: Your Last.fm username
+- `LASTFM_API_KEY`: Your Last.fm API key
+- `LIDARR_API_KEY`: Your Lidarr API key
 
 ### Option 2: Docker Run
 

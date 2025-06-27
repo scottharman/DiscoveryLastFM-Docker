@@ -1,0 +1,120 @@
+{
+  "cap_add": null,
+  "cap_drop": null,
+  "cmd": "",
+  "cpu_priority": 0,
+  "devices": null,
+  "enable_publish_all_ports": false,
+  "enabled": true,
+  "env_variables": [
+    {
+      "key": "LASTFM_USERNAME",
+      "value": "your_lastfm_username"
+    },
+    {
+      "key": "LASTFM_API_KEY", 
+      "value": "your_lastfm_api_key"
+    },
+    {
+      "key": "MUSIC_SERVICE",
+      "value": "lidarr"
+    },
+    {
+      "key": "LIDARR_API_KEY",
+      "value": "your_lidarr_api_key"
+    },
+    {
+      "key": "LIDARR_ENDPOINT",
+      "value": "http://lidarr:8686"
+    },
+    {
+      "key": "AUTO_UPDATE_ENABLED",
+      "value": "true"
+    },
+    {
+      "key": "UPDATE_CHECK_INTERVAL_HOURS",
+      "value": "24"
+    },
+    {
+      "key": "DISCOVERY_MODE",
+      "value": "cron"
+    },
+    {
+      "key": "CRON_SCHEDULE",
+      "value": "0 3 * * *"
+    },
+    {
+      "key": "DRY_RUN",
+      "value": "false"
+    },
+    {
+      "key": "DEBUG",
+      "value": "false"
+    },
+    {
+      "key": "RECENT_MONTHS",
+      "value": "3"
+    },
+    {
+      "key": "MIN_PLAYS",
+      "value": "20"
+    },
+    {
+      "key": "PUID",
+      "value": "1000"
+    },
+    {
+      "key": "PGID", 
+      "value": "1000"
+    }
+  ],
+  "exporting": false,
+  "id": "",
+  "image": "mrrobotogit/discoverylastfm:latest",
+  "is_ddsm": false,
+  "is_package": false,
+  "links": [],
+  "memory_limit": 0,
+  "name": "discoverylastfm",
+  "network": [
+    {
+      "driver": "bridge",
+      "name": "bridge"
+    }
+  ],
+  "network_mode": "bridge",
+  "port_bindings": [
+    {
+      "container_port": 8080,
+      "host_port": 8080,
+      "type": "tcp"
+    }
+  ],
+  "privileged": false,
+  "shortcut": {
+    "enable_shortcut": false,
+    "enable_status_page": false,
+    "enable_web_page": false,
+    "web_page_url": ""
+  },
+  "ulimits": null,
+  "use_host_network": false,
+  "volume_bindings": [
+    {
+      "host_volume_file": "",
+      "mount_path": "/app/config",
+      "type": "volume"
+    },
+    {
+      "host_volume_file": "",
+      "mount_path": "/app/logs", 
+      "type": "volume"
+    },
+    {
+      "host_volume_file": "",
+      "mount_path": "/app/cache",
+      "type": "volume"
+    }
+  ],
+  "working_dir": ""
+}
