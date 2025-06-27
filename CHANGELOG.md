@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved PUID/PGID environment variable handling for cross-platform compatibility
 - Fixed configuration validation errors in health check function
 - Enhanced directory permission handling to gracefully handle mounted volume restrictions
+- **NEW**: Fixed macOS configuration write permission issues with progressive fallback system
+- **NEW**: Improved error handling for mounted volume write failures on Docker Desktop
 
 ### Changed
 - Updated Redis command format to use array syntax for proper argument parsing
