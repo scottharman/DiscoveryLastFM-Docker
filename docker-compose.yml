@@ -23,7 +23,7 @@ services:
     ports:
       - 8080:8080
     # Set user for proper file permissions (especially important for macOS/Windows)
-    user: "${PUID:-1000}:${PGID:-1000}"
+    # user: "${PUID:-1000}:${PGID:-1000}"  # Commented out to allow proper cron setup
     environment:
       # === OPERATION MODE ===
       - DISCOVERY_MODE=cron              # sync, cron, daemon, test
