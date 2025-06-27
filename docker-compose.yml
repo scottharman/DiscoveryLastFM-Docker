@@ -20,7 +20,7 @@ services:
     #   dockerfile: Dockerfile
     #   args:
     #     - BUILDKIT_INLINE_CACHE=1
-    image: mrrobotogit/discoverylastfm:latest
+    image: mrrobotogit/discoverylastfm:v2.1.0
     container_name: discoverylastfm
     hostname: discoverylastfm
     ports:

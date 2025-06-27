@@ -70,7 +70,7 @@
   ],
   "exporting": false,
   "id": "",
-  "image": "mrrobotogit/discoverylastfm:latest",
+  "image": "mrrobotogit/discoverylastfm:v2.1.0",
   "is_ddsm": false,
   "is_package": false,
   "links": [],
