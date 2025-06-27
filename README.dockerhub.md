@@ -15,9 +15,13 @@ Streamlined Docker container for **DiscoveryLastFM v2.1.0** - automated music di
 curl -O https://raw.githubusercontent.com/MrRobotoGit/DiscoveryLastFM-Docker/main/docker-compose.yml
 curl -O https://raw.githubusercontent.com/MrRobotoGit/DiscoveryLastFM-Docker/main/.env.example
 
-# Configure environment
+# Configure environment (REQUIRED variables already have dummy values)
 cp .env.example .env
-nano .env  # Add your Last.fm and Lidarr/Headphones credentials
+nano .env  # Replace dummy values with your real credentials
+
+# ⚠️ IMPORTANT: These variables are REQUIRED for container startup:
+# AUTO_UPDATE_ENABLED=true
+# UPDATE_CHECK_INTERVAL_HOURS=24
 
 # Start the stack
 docker compose up -d
@@ -33,6 +37,8 @@ docker run -d \
   -e MUSIC_SERVICE=lidarr \
   -e LIDARR_API_KEY=your_lidarr_key \
   -e LIDARR_ENDPOINT=http://your-lidarr:8686 \
+  -e AUTO_UPDATE_ENABLED=true \
+  -e UPDATE_CHECK_INTERVAL_HOURS=24 \
   -v discoverylastfm_config:/app/config \
   -v discoverylastfm_logs:/app/logs \
   mrrobotogit/discoverylastfm:latest
@@ -45,6 +51,8 @@ docker run -d \
   -e MUSIC_SERVICE=headphones \
   -e HP_API_KEY=your_headphones_key \
   -e HP_ENDPOINT=http://your-headphones:8181 \
+  -e AUTO_UPDATE_ENABLED=true \
+  -e UPDATE_CHECK_INTERVAL_HOURS=24 \
   -v discoverylastfm_config:/app/config \
   -v discoverylastfm_logs:/app/logs \
   mrrobotogit/discoverylastfm:latest
@@ -62,18 +70,27 @@ docker run -d \
 
 ## 📖 Required Configuration
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `LASTFM_USERNAME` | Your Last.fm username | `john_doe` |
-| `LASTFM_API_KEY` | Last.fm API key ([Get here](https://www.last.fm/api/account/create)) | `abc123def456...` |
-| `MUSIC_SERVICE` | Music service (`lidarr` or `headphones`) | `lidarr` |
+> **⚠️ CRITICAL**: These variables are **REQUIRED** for the container to start. Missing values will cause startup failure.
 
-### Lidarr Configuration
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `LIDARR_API_KEY` | Lidarr API key | Required |
-| `LIDARR_ENDPOINT` | Lidarr server URL | `http://lidarr:8686` |
-| `LIDARR_ROOT_FOLDER` | Music library path | `/music` |
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `LASTFM_USERNAME` | **YES** | `dummy_username` | Your Last.fm username |
+| `LASTFM_API_KEY` | **YES** | `dummy_api_key_replace_with_real_one` | Last.fm API key ([Get here](https://www.last.fm/api/account/create)) |
+| `AUTO_UPDATE_ENABLED` | **YES** | `true` | Enable auto-update checking |
+| `UPDATE_CHECK_INTERVAL_HOURS` | **YES** | `24` | Update check interval |
+| `MUSIC_SERVICE` | **YES** | `lidarr` | Music service (`lidarr` or `headphones`) |
+
+**🚨 Startup Error**: Without these required variables, container fails with:
+```
+/usr/local/bin/docker-entrypoint.sh: line 270: syntax error near unexpected token 'else'
+```
+
+### Lidarr Configuration (if MUSIC_SERVICE=lidarr)
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `LIDARR_API_KEY` | **YES** | `dummy_lidarr_api_key_replace_with_real_one` | Lidarr API key |
+| `LIDARR_ENDPOINT` | NO | `http://lidarr:8686` | Lidarr server URL |
+| `LIDARR_ROOT_FOLDER` | NO | `/music` | Music library path |
 
 ### Headphones Configuration  
 | Variable | Description | Default |
@@ -90,15 +107,15 @@ docker run -d \
 | `daemon` | Continuous background | `-e SLEEP_HOURS=6` |
 | `test` | Validation mode | `-e DRY_RUN=true` |
 
-### v2.1.0 Auto-Update Configuration
+### v2.1.0 Auto-Update Configuration ⚠️ **REQUIRED**
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `AUTO_UPDATE_ENABLED` | Enable auto-update checking | `false` |
-| `UPDATE_CHECK_INTERVAL_HOURS` | Check interval in hours | `24` |
-| `BACKUP_RETENTION_DAYS` | Backup retention in days | `7` |
-| `ALLOW_PRERELEASE_UPDATES` | Include pre-releases | `false` |
-| `GITHUB_TOKEN` | GitHub API token (optional) | `` |
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `AUTO_UPDATE_ENABLED` | **YES** | `true` | Enable auto-update checking |
+| `UPDATE_CHECK_INTERVAL_HOURS` | **YES** | `24` | Check interval in hours |
+| `BACKUP_RETENTION_DAYS` | NO | `7` | Backup retention in days |
+| `ALLOW_PRERELEASE_UPDATES` | NO | `false` | Include pre-releases |
+| `GITHUB_TOKEN` | NO | `` | GitHub API token (optional) |
 
 ## 🔧 Management
 
