@@ -95,24 +95,20 @@ setup_configuration() {
     if [[ ! -f "$CONFIG_PATH" ]]; then
         log_warn "Configuration file not found at $CONFIG_PATH"
         
-        # Check for environment variables configuration
-        if [[ -n "${LASTFM_USERNAME:-}" && -n "${LASTFM_API_KEY:-}" && -n "${MUSIC_SERVICE:-}" ]]; then
+        # First, try to use the pre-configured example file if it exists
+        if [[ -f "$CONFIG_EXAMPLE_PATH" ]]; then
+            log_info "Found pre-configured example file, copying to $CONFIG_PATH"
+            cp "$CONFIG_EXAMPLE_PATH" "$CONFIG_PATH"
+            log_info "✅ Configuration ready from example file"
+        # Fallback to creating from environment variables
+        elif [[ -n "${LASTFM_USERNAME:-}" && -n "${LASTFM_API_KEY:-}" && -n "${MUSIC_SERVICE:-}" ]]; then
             log_info "Creating configuration from environment variables..."
             create_config_from_env
             # Update CONFIG_PATH environment variable if it was changed in create_config_from_env
             export CONFIG_PATH
         else
-            log_warn "No environment variables found for configuration"
-            
-            # Copy example configuration
-            if [[ -f "$CONFIG_EXAMPLE_PATH" ]]; then
-                log_info "Copying example configuration to $CONFIG_PATH"
-                cp "$CONFIG_EXAMPLE_PATH" "$CONFIG_PATH"
-                log_warn "Please edit $CONFIG_PATH with your credentials before running"
-            else
-                log_error "No example configuration found at $CONFIG_EXAMPLE_PATH"
-                exit 1
-            fi
+            log_error "No configuration source available (no example file or environment variables)"
+            exit 1
         fi
     else
         log_info "Configuration file found at $CONFIG_PATH"
