@@ -42,8 +42,9 @@ LABEL org.opencontainers.image.source="https://github.com/MrRobotoGit/DiscoveryL
 LABEL org.opencontainers.image.version="2.1.0"
 LABEL org.opencontainers.image.licenses="MIT"
 
-# Install runtime dependencies only
+# Install runtime dependencies including bash for entrypoint compatibility
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash \
     curl \
     cron \
     && rm -rf /var/lib/apt/lists/* \

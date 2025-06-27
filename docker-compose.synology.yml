@@ -8,13 +8,9 @@
 
 services:
   discoverylastfm:
-    image: mrrobotogit/discoverylastfm:latest
-    # Fix for bash compatibility in v2.1.0+ (install bash at runtime)
-    entrypoint: >
-      /bin/sh -c "apt-get update && 
-                  apt-get install -y --no-install-recommends bash && 
-                  rm -rf /var/lib/apt/lists/* &&
-                  exec /usr/local/bin/docker-entrypoint.sh"
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: discoverylastfm
     hostname: discoverylastfm
     ports:
