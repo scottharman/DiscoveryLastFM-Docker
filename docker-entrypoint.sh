@@ -348,7 +348,9 @@ setup_cron() {
     
     # Start cron daemon
     log_info "Starting cron daemon..."
-    cron
+    # Ensure run directory exists and start cron service
+    mkdir -p /var/run
+    service cron start
 }
 
 # ==============================================================================
