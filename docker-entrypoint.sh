@@ -99,6 +99,8 @@ setup_configuration() {
         if [[ -n "${LASTFM_USERNAME:-}" && -n "${LASTFM_API_KEY:-}" && -n "${MUSIC_SERVICE:-}" ]]; then
             log_info "Creating configuration from environment variables..."
             create_config_from_env
+            # Update CONFIG_PATH environment variable if it was changed in create_config_from_env
+            export CONFIG_PATH
         else
             log_warn "No environment variables found for configuration"
             
@@ -128,15 +130,21 @@ create_config_from_env() {
     local config_dir
     config_dir="$(dirname "$CONFIG_PATH")"
     
-    if [[ ! -w "$config_dir" ]]; then
-        log_error "Cannot write to config directory $config_dir. Using read-only fallback."
+    # Test write access by attempting to create a test file
+    if ! touch "$config_dir/.test_write" 2>/dev/null; then
+        log_warn "Cannot write to config directory $config_dir. Using read-only fallback."
         # Use a temporary config in container filesystem
         CONFIG_PATH="/tmp/config.py"
         log_warn "Using temporary config at $CONFIG_PATH"
+        # Ensure temp directory exists and is writable
+        mkdir -p "$(dirname "$CONFIG_PATH")" 2>/dev/null || true
+    else
+        # Clean up test file
+        rm -f "$config_dir/.test_write" 2>/dev/null || true
     fi
     
-    # Attempt to write configuration
-    if ! cat > "$CONFIG_PATH" << EOF
+    # Attempt to write configuration with better error handling
+    if ! cat > "$CONFIG_PATH" 2>/dev/null << EOF
 # DiscoveryLastFM Configuration - Generated from Environment Variables
 # Generated at: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
 
@@ -201,8 +209,52 @@ EOF
     then
         log_info "Configuration created from environment variables at $CONFIG_PATH"
     else
-        log_error "Failed to write configuration file. Please check permissions."
-        return 1
+        log_warn "Failed to write configuration file to $CONFIG_PATH. Trying final fallback."
+        # Final fallback: try /tmp if not already there
+        if [[ "$CONFIG_PATH" != "/tmp/config.py" ]]; then
+            CONFIG_PATH="/tmp/config.py"
+            log_warn "Using final fallback location: $CONFIG_PATH"
+            if ! cat > "$CONFIG_PATH" 2>/dev/null << 'FALLBACK_EOF'
+# DiscoveryLastFM Configuration - Generated from Environment Variables (Fallback)
+MUSIC_SERVICE = "${MUSIC_SERVICE:-headphones}"
+LASTFM_USERNAME = "${LASTFM_USERNAME}"
+LASTFM_API_KEY = "${LASTFM_API_KEY}"
+HP_API_KEY = "${HP_API_KEY:-}"
+HP_ENDPOINT = "${HP_ENDPOINT:-http://headphones:8181}"
+LIDARR_API_KEY = "${LIDARR_API_KEY:-}"
+LIDARR_ENDPOINT = "${LIDARR_ENDPOINT:-http://lidarr:8686}"
+LIDARR_ROOT_FOLDER = "${LIDARR_ROOT_FOLDER:-/music}"
+LIDARR_QUALITY_PROFILE_ID = ${LIDARR_QUALITY_PROFILE_ID:-1}
+LIDARR_METADATA_PROFILE_ID = ${LIDARR_METADATA_PROFILE_ID:-1}
+LIDARR_MONITOR_MODE = "${LIDARR_MONITOR_MODE:-all}"
+LIDARR_SEARCH_ON_ADD = ${LIDARR_SEARCH_ON_ADD:-True}
+RECENT_MONTHS = ${RECENT_MONTHS:-3}
+MIN_PLAYS = ${MIN_PLAYS:-20}
+SIMILAR_MATCH_MIN = ${SIMILAR_MATCH_MIN:-0.46}
+MAX_SIMILAR_PER_ART = ${MAX_SIMILAR_PER_ART:-20}
+MAX_POP_ALBUMS = ${MAX_POP_ALBUMS:-5}
+CACHE_TTL_HOURS = ${CACHE_TTL_HOURS:-24}
+REQUEST_LIMIT = ${REQUEST_LIMIT:-0.2}
+MBZ_DELAY = ${MBZ_DELAY:-1.1}
+DEBUG_PRINT = ${DEBUG_PRINT:-False}
+AUTO_UPDATE_ENABLED = ${AUTO_UPDATE_ENABLED:-False}
+UPDATE_CHECK_INTERVAL_HOURS = ${UPDATE_CHECK_INTERVAL_HOURS:-24}
+BACKUP_RETENTION_DAYS = ${BACKUP_RETENTION_DAYS:-7}
+ALLOW_PRERELEASE_UPDATES = ${ALLOW_PRERELEASE_UPDATES:-False}
+GITHUB_TOKEN = "${GITHUB_TOKEN:-}"
+GITHUB_REPO_OWNER = "MrRobotoGit"
+GITHUB_REPO_NAME = "DiscoveryLastFM"
+FALLBACK_EOF
+            then
+                log_info "Configuration created using final fallback at $CONFIG_PATH"
+            else
+                log_error "All configuration write attempts failed. Container may not function properly."
+                # Don't return 1 here - let it continue and hope for the best
+            fi
+        else
+            log_error "Final fallback also failed. Container may not function properly."
+            # Don't return 1 here - let it continue and hope for the best
+        fi
     fi
 }
 
