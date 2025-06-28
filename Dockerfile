@@ -47,6 +47,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
     curl \
     cron \
+    procps \
+    && ln -sf /usr/sbin/cron /usr/sbin/crond \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
