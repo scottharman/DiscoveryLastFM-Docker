@@ -53,7 +53,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean
 
 # Create non-root user for security
-RUN groupadd -r discoverylastfm && useradd -r -g discoverylastfm -s /bin/bash discoverylastfm
+RUN groupadd -g 1000 discoverylastfm && useradd -u 1000 -g 1000 -s /bin/bash discoverylastfm
 
 # Copy virtual environment from builder stage
 COPY --from=builder /opt/venv /opt/venv
@@ -89,7 +89,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 EXPOSE 8080
 
 # Switch to non-root user (commented out to allow cron setup as root)
-# USER discoverylastfm
+USER discoverylastfm
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
