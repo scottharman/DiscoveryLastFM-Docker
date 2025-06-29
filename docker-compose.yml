@@ -20,6 +20,7 @@ services:
       dockerfile: Dockerfile
     container_name: discoverylastfm
     hostname: discoverylastfm
+    user: "0:0"
     ports:
       - 8080:8080
     # Set user for proper file permissions (especially important for macOS/Windows)
