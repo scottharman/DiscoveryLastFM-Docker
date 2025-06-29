@@ -353,26 +353,14 @@ setup_cron() {
     # Ensure directories exist (skip permission changes that might fail)
     mkdir -p /var/run /var/log /var/spool/cron/crontabs 2>/dev/null || true
     
-    # Start cron daemon directly in background
-    crond -f -d 8 &
+    # Start cron daemon direttamente in background con PID file in /tmp/cron
+    crond -f -p /tmp/cron/crond.pid &
     local cron_pid=$!
-    
-    # Give cron a moment to start
     sleep 2
-    
-    # Verify cron is running
     if pgrep crond > /dev/null; then
         log_info "✅ Cron daemon started successfully (PID: $cron_pid)"
     else
-        log_warn "⚠️ Cron daemon failed to start, trying service approach..."
-        # Try with service
-        service cron start
-        sleep 1
-        if pgrep cron > /dev/null; then
-            log_info "✅ Cron daemon started with service method"
-        else
-            log_error "❌ Failed to start cron daemon"
-        fi
+        log_error "❌ Failed to start cron daemon as non-root user"
     fi
 }
 

@@ -73,8 +73,8 @@ COPY --chown=discoverylastfm:discoverylastfm docker-entrypoint.sh /usr/local/bin
 COPY --chown=discoverylastfm:discoverylastfm scripts/health-check.sh /usr/local/bin/health-check
 
 # Create required directories with proper permissions
-RUN mkdir -p /app/{config,logs,cache} \
-    && chown -R discoverylastfm:discoverylastfm /app \
+RUN mkdir -p /app/{config,logs,cache} /tmp/cron \
+    && chown -R discoverylastfm:discoverylastfm /app /tmp/cron \
     && chmod +x /usr/local/bin/docker-entrypoint.sh \
     && chmod +x /usr/local/bin/health-check
 
