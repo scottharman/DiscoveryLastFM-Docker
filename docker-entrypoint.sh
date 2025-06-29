@@ -353,8 +353,8 @@ setup_cron() {
     # Ensure directories exist (skip permission changes that might fail)
     mkdir -p /var/run /var/log /var/spool/cron/crontabs 2>/dev/null || true
     
-    # Start cron daemon direttamente in background con PID file in /tmp/cron
-    crond -f -p /tmp/cron/crond.pid &
+    # Start cron daemon direttamente in background senza opzioni non supportate
+    crond -f &
     local cron_pid=$!
     sleep 2
     if pgrep crond > /dev/null; then
