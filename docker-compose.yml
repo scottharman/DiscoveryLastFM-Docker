@@ -23,7 +23,6 @@ services:
     ports:
       - 8080:8080
     # Set user for proper file permissions (especially important for macOS/Windows)
-    user: "1000:1000"
     environment:
       # === USER PERMISSIONS ===
       # - PUID=0                           # Run as root to allow cron setup
