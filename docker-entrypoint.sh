@@ -340,23 +340,40 @@ setup_cache() {
 
 setup_cron() {
     log_info "Setting up cron for scheduled execution..."
-    
-    # Create cron job
-    echo "$CRON_SCHEDULE cd /app && python DiscoveryLastFM.py >> $LOG_PATH/cron.log 2>&1" | crontab -
-    
-    log_info "Cron job scheduled: $CRON_SCHEDULE"
-    
-    # Start cron daemon
+
+    # Build a temporary crontab file
+    local cron_tmp="/tmp/lastfm.crontab"
+    echo "# Auto-generated crontab with vars" > "$cron_tmp"
+
+    # Dump all vars
+    while IFS='=' read -r key value; do
+        # Escape % characters, which have special meaning in crontab
+        safe_value="${value//%/\\%}"
+        echo "$key=$safe_value" >> "$cron_tmp"
+    done <<(env)
+
+    echo "" >> "$cron_tmp"
+
+    # Add the actual cron job
+    echo "# Scheduled job" >> "$cron_tmp"
+    echo "$CRON_SCHEDULE cd /app && python DiscoveryLastFM.py >> $LOG_PATH/cron.log 2>&1" >> "$cron_tmp"
+
+    # Install the crontab
+    crontab "$cron_tmp"
+    rm -f "$cron_tmp"
+
+    log_info "✅ Cron job scheduled: $CRON_SCHEDULE with inline environment"
+
+    # Ensure required directories exist (cron may complain otherwise)
+    mkdir -p /var/run /var/log /var/spool/cron/crontabs 2>/dev/null || true
+
     log_info "Starting cron daemon..."
     log_info "🔍 Cron setup user: $(whoami) (UID: $(id -u))"
-    
-    # Ensure directories exist (skip permission changes that might fail)
-    mkdir -p /var/run /var/log /var/spool/cron/crontabs 2>/dev/null || true
-    
-    # Start cron daemon direttamente in background senza opzioni non supportate
+
     crond -f &
     local cron_pid=$!
     sleep 2
+
     if pgrep crond > /dev/null; then
         log_info "✅ Cron daemon started successfully (PID: $cron_pid)"
     else
