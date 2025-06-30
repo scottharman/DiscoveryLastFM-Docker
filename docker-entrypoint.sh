@@ -104,7 +104,7 @@ setup_configuration() {
                 log_warn "Cannot write to config directory, using temporary location: $CONFIG_PATH"
             fi
             cp "$CONFIG_EXAMPLE_PATH" "$CONFIG_PATH"
-            log_info "✅ Configuration ready from example file at $CONFIG_PATH"
+            log_info "âœ… Configuration ready from example file at $CONFIG_PATH"
         # Fallback to creating from environment variables
         elif [[ -n "${LASTFM_USERNAME:-}" && -n "${LASTFM_API_KEY:-}" && -n "${MUSIC_SERVICE:-}" ]]; then
             log_info "Creating configuration from environment variables..."
@@ -276,6 +276,21 @@ FALLBACK_EOF
     fi
 }
 
+
+# ++++++++++++++++++++++++++++++++++
+# EXPORT VARS
+# ++++++++++++++++++++++++++++++++++
+
+export_vars(){
+  printenv | grep -v '^CRON_SCHEDULE=' | while IFS='=' read -r key value; do
+    # Only allow alphanumeric or underscores in keys
+    if [[ "$key" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
+        [ -z "$value" ] && continue
+        eval "export $key=\"\$value\""
+    fi
+  done
+}
+
 # ==============================================================================
 # Logging Setup
 # ==============================================================================
@@ -345,39 +360,46 @@ setup_cron() {
     local cron_tmp="/tmp/lastfm.crontab"
     echo "# Auto-generated crontab with vars" > "$cron_tmp"
 
-    # Dump all vars
-    while IFS='=' read -r key value; do
-        # Escape % characters, which have special meaning in crontab
-        safe_value="${value//%/\\%}"
-        echo "$key=$safe_value" >> "$cron_tmp"
-    done <<(env)
+    printenv | grep -v '^CRON_SCHEDULE=' | while IFS='=' read -r key value; do
+    # Skip empty values (crontab can't handle lines like FOO=)
+    [ -z "$value" ] && continue
 
+    # Escape % characters
+    safe_value=$(printf '%s\n' "$value" | sed 's/%/\\%/g')
+    echo "$key=$safe_value" >> "$cron_tmp"
+	done
     echo "" >> "$cron_tmp"
 
     # Add the actual cron job
     echo "# Scheduled job" >> "$cron_tmp"
-    echo "$CRON_SCHEDULE cd /app && python DiscoveryLastFM.py >> $LOG_PATH/cron.log 2>&1" >> "$cron_tmp"
+    echo "${CRON_SCHEDULE:-'0 */3 * * *'} cd /app && python DiscoveryLastFM.py >> $LOG_PATH/cron.log 2>&1" >> "$cron_tmp"
+    # garbage test
+    #echo "${CRON_SCHEDULE:-'0 */3 * * *'} echo "test" >> $LOG_PATH/cron.log 2>&1" >> "$cron_tmp"
+
+    echo "Crontab"
+    cat -A -n "$cron_tmp"
 
     # Install the crontab
     crontab "$cron_tmp"
+
     rm -f "$cron_tmp"
 
-    log_info "✅ Cron job scheduled: $CRON_SCHEDULE with inline environment"
+    log_info "âœ… Cron job scheduled: $CRON_SCHEDULE with inline environment"
 
     # Ensure required directories exist (cron may complain otherwise)
     mkdir -p /var/run /var/log /var/spool/cron/crontabs 2>/dev/null || true
 
     log_info "Starting cron daemon..."
-    log_info "🔍 Cron setup user: $(whoami) (UID: $(id -u))"
+    log_info "ðŸ” Cron setup user: $(whoami) (UID: $(id -u))"
 
-    crond -f &
+    crond -f -p /tmp/crond.pid &
     local cron_pid=$!
     sleep 2
 
     if pgrep crond > /dev/null; then
-        log_info "✅ Cron daemon started successfully (PID: $cron_pid)"
+        log_info "âœ… Cron daemon started successfully (PID: $cron_pid)"
     else
-        log_error "❌ Failed to start cron daemon as non-root user"
+        log_error "âŒ Failed to start cron daemon as non-root user"
     fi
 }
 
@@ -457,11 +479,12 @@ main() {
     log_info "Starting DiscoveryLastFM Container..."
     log_info "Mode: $DISCOVERY_MODE"
     log_info "Debug: $DEBUG"
-    log_info "🔍 Current user: $(whoami) (UID: $(id -u), GID: $(id -g))"
+    log_info "ðŸ” Current user: $(whoami) (UID: $(id -u), GID: $(id -g))"
     
     # Setup steps
     setup_user
     setup_configuration
+    export_vars
     setup_logging
     setup_cache
     
@@ -475,7 +498,7 @@ main() {
     cd /app
     
     # Handle v2.1.0 CLI commands first
-    if [[ "$1" == "--update" || "$1" == "--update-status" || "$1" == "--list-backups" || "$1" == "--version" || "$1" == "--cleanup" ]]; then
+    if [[ "${1:-}" == "--update" || "${1:-}" == "--update-status" || "${1:-}" == "--list-backups" || "${1:-}" == "--version" || "${1:-}" == "--cleanup" ]]; then
         log_info "Executing DiscoveryLastFM CLI command: $1"
         exec python DiscoveryLastFM.py "$@"
     fi
@@ -525,20 +548,20 @@ import sys
 sys.path.append('/app')
 try:
     exec(open('$CONFIG_PATH').read())
-    print('✅ Configuration loaded successfully')
+    print('âœ… Configuration loaded successfully')
     
     # Test imports
     from services.factory import MusicServiceFactory
-    print('✅ Service factory imported successfully')
+    print('âœ… Service factory imported successfully')
     
     # Test service creation (dry run)
     config_dict = {k: v for k, v in globals().items() if k.isupper()}
     service_type = config_dict.get('MUSIC_SERVICE', 'headphones')
-    print(f'✅ Service type: {service_type}')
+    print(f'âœ… Service type: {service_type}')
     
-    print('✅ Test mode completed successfully')
+    print('âœ… Test mode completed successfully')
 except Exception as e:
-    print(f'❌ Test failed: {e}')
+    print(f'âŒ Test failed: {e}')
     sys.exit(1)
 "
             ;;
